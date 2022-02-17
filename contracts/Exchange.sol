@@ -3,9 +3,15 @@ pragma solidity 0.8.11;
 
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
-contract Exchange {
+import "./interfaces/IWrappedEther.sol";
+import "./interfaces/IExchangeAdapter.sol";
+
+contract Exchange is ReentrancyGuard {
     using SafeERC20 for IERC20;
+    using Address for address;
 
     // struct size - 64 bytes, 2 slots
     struct RouteEdge {
@@ -13,6 +19,12 @@ contract Exchange {
         address pool; // address of pool to call
         address fromCoin; // address of coin to deposit to pool
         address toCoin; // address of coin to get from pool
+    }
+
+    // struct size - 32 bytes, 1 slots
+    struct LpToken {
+        uint32 swapProtocol; // 0 - unknown edge, 1 - UniswapV2, 2 - Curve...
+        address pool; // address of pool to call
     }
 
     // returns true if address is registered as major token, false otherwise
@@ -30,15 +42,140 @@ contract Exchange {
     // Storage of single edges from minor coin to major
     mapping(address => RouteEdge) public minorCoins;
 
+    // Storage of LP tokens that are registeres in exchange
+    mapping(address => LpToken) public lpTokens;
+
     // Storage of swap execution method for different protocols
-    mapping(uint256 => address) public adapters;
+    mapping(uint32 => address) public adapters;
+
+    // Wrapped ether token that is used for native ether swaps
+    IWrappedEther public wrappedEther =
+        IWrappedEther(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+
+    // bytes4(keccak256(bytes("executeSwap(address,address,address,uint256)")))
+    bytes4 public constant executeSwapSigHash = 0x6012856e;
+
+    // bytes4(keccak256(bytes("enterPool(address,address,uint256)")))
+    bytes4 public constant enterPoolSigHash = 0x73ec962e;
+
+    // bytes4(keccak256(bytes("exitPool(address,address,uint256)")))
+    bytes4 public constant exitPoolSigHash = 0x660cb8d4;
+
+    /// @notice Execute exchange of coins through predefined routes
+    /// @param from swap input token
+    /// @param to swap output token
+    /// @param amountIn amount of `from `tokens to be taken from caller
+    /// @param minAmountOut minimum amount of output tokens, revert if less
+    /// @return Amount of tokens that are returned
+    function exchange(
+        address from,
+        address to,
+        uint256 amountIn,
+        uint256 minAmountOut
+    ) external payable nonReentrant returns (uint256) {
+        require(from != to, "Exchange: from == to");
+
+        if (lpTokens[to].swapProtocol != 0) {
+            IERC20(from).safeTransferFrom(msg.sender, address(this), amountIn);
+
+            uint256 amountOut = _enterLiquidityPool(from, to, amountIn);
+            require(amountOut >= minAmountOut, "Exchange: slippage");
+
+            IERC20(to).safeTransfer(msg.sender, amountOut);
+
+            return amountOut;
+        }
+
+        if (lpTokens[from].swapProtocol != 0) {
+            IERC20(from).safeTransferFrom(msg.sender, address(this), amountIn);
+
+            uint256 amountOut = _exitLiquidityPool(from, to, amountIn);
+            require(amountOut >= minAmountOut, "Exchange: slippage");
+
+            IERC20(to).safeTransfer(msg.sender, amountOut);
+
+            return amountOut;
+        }
+
+        if (
+            from == address(0) ||
+            from == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE
+        ) {
+            require(
+                to != address(0) &&
+                    to != 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE,
+                "Exchange: ETH to ETH"
+            );
+            require(amountIn == msg.value, "Exchange: value/amount discrep");
+
+            wrappedEther.deposit{value: msg.value}();
+
+            uint256 amountOut = _exchange(address(wrappedEther), to, amountIn);
+            require(amountOut >= minAmountOut, "Exchange: slippage");
+            IERC20(to).safeTransfer(msg.sender, amountOut);
+
+            return amountOut;
+        }
+
+        IERC20(from).safeTransferFrom(msg.sender, address(this), amountIn);
+
+        if (
+            to == address(0) || to == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE
+        ) {
+            uint256 amountOut = _exchange(
+                from,
+                address(wrappedEther),
+                amountIn
+            );
+            require(amountOut >= minAmountOut, "Exchange: slippage");
+
+            wrappedEther.withdraw(amountOut);
+
+            Address.sendValue(payable(msg.sender), amountOut);
+
+            return amountOut;
+        }
+        uint256 amountOut_ = _exchange(from, to, amountIn);
+
+        require(amountOut_ >= minAmountOut, "Exchange: slippage");
+
+        IERC20(to).safeTransfer(msg.sender, amountOut_);
+
+        return amountOut_;
+    }
+
+    /// @notice Register swap/lp token adapters
+    /// @param protocolId protocol id of adapter to add
+    function registerAdapters(
+        address[] calldata adapters_,
+        uint32[] calldata protocolId
+    ) external {
+        uint256 length = adapters_.length;
+        require(
+            adapters_.length == protocolId.length,
+            "Exchange: length discrep"
+        );
+        for (uint256 i = 0; i < length; i++) {
+            adapters[protocolId[i]] = adapters_[i];
+        }
+    }
+
+    /// @notice Unregister swap/lp token adapters
+    /// @param protocolId protocol id of adapter to remove
+    function unregisterAdapters(uint32[] calldata protocolId) external {
+        uint256 length = protocolId.length;
+        for (uint256 i = 0; i < length; i++) {
+            delete adapters[protocolId[i]];
+        }
+    }
 
     /// @notice Create single edge of a route from minor coin to major
     /// @dev In order for swap from/to minor coin to be working, `toCoin` should
     /// be registered as major
     /// @param edges array of edges to store
     function createMinorCoinEdge(RouteEdge[] calldata edges) external {
-        for (uint256 i = 0; i < edges.length; i++) {
+        uint256 length = edges.length;
+        for (uint256 i = 0; i < length; i++) {
             // validate protocol id - zero is interpreted as
             // non-existing route
             require(edges[i].swapProtocol != 0, "Exchange: protocol type !set");
@@ -67,16 +204,12 @@ contract Exchange {
         }
     }
 
-    /// @notice Get prebuilt route between two major coins
-    /// @param from major coin to start route from
-    /// @param to major coin that should be end of route
-    /// @return Prebuilt route between major coins
-    function getMajorRoute(address from, address to)
-        external
-        view
-        returns (RouteEdge[] memory)
-    {
-        return internalMajorRoute[from][to];
+    /// @notice Remove internal minor route piece
+    /// @param edges source coin of route to delete
+    function deleteMinorCoinEdge(address[] calldata edges) external {
+        for (uint256 i = 0; i < edges.length; i++) {
+            delete minorCoins[edges[i]];
+        }
     }
 
     /// @notice Create route between two tokens and set them as major
@@ -153,6 +286,93 @@ contract Exchange {
             // as route between these coins is set, we consider them as major
             isMajorCoin[start] = true;
             isMajorCoin[end] = true;
+        }
+    }
+
+    /// @notice Remove internal major routes and unregister them on demand
+    /// @param from source coin of route to delete
+    /// @param to destination coin of route to delete
+    /// @param removeMajor true if need to no longer recognize source and destination coin as major
+    function deleteInternalMajorRoutes(
+        address[] calldata from,
+        address[] calldata to,
+        bool removeMajor
+    ) external {
+        require(from.length == to.length, "Exchange: length discrep");
+        for (uint256 i = 0; i < from.length; i++) {
+            delete internalMajorRoute[from[i]][to[i]];
+            if (removeMajor) {
+                isMajorCoin[from[i]] = false;
+                isMajorCoin[to[i]] = false;
+            }
+        }
+    }
+
+    /// @notice Force unapprove of some coin to any pool
+    /// @param coins coins list
+    /// @param spenders pools list
+    function removeApproval(
+        address[] calldata coins,
+        address[] calldata spenders
+    ) external {
+        require(coins.length == spenders.length, "Exchange: length discrep");
+        for (uint256 i = 0; i < coins.length; i++) {
+            IERC20(coins[i]).safeApprove(spenders[i], 0);
+            approveCompleted[spenders[i]][coins[i]] = false;
+        }
+    }
+
+    /// @notice Force approve of some coin to any pool
+    /// @param coins coins list
+    /// @param spenders pools list
+    function createApproval(
+        address[] calldata coins,
+        address[] calldata spenders
+    ) external {
+        require(coins.length == spenders.length, "Exchange: length discrep");
+        for (uint256 i = 0; i < coins.length; i++) {
+            IERC20(coins[i]).safeApprove(spenders[i], type(uint256).max);
+            approveCompleted[spenders[i]][coins[i]] = true;
+        }
+    }
+
+    /// @notice Add all info for enabling LP token swap and set up coin approval
+    /// @param edges info about protocol type and pools
+    /// @param lpTokensAddress coins that will be recognized as LP tokens
+    /// @param entryCoins coins which require approval to pool
+    function createLpToken(
+        LpToken[] calldata edges,
+        address[] calldata lpTokensAddress,
+        address[][] calldata entryCoins
+    ) external {
+        require(
+            edges.length == entryCoins.length &&
+                entryCoins.length == lpTokensAddress.length,
+            "Exchange: length discrep"
+        );
+        for (uint256 i = 0; i < edges.length; i++) {
+            LpToken memory edge = edges[i];
+            require(edge.swapProtocol != 0, "Exchange: protocol type !set");
+
+            for (uint256 j = 0; j < entryCoins[i].length; j++) {
+                if (!approveCompleted[edge.pool][entryCoins[i][j]]) {
+                    IERC20(entryCoins[i][j]).safeApprove(
+                        edge.pool,
+                        type(uint256).max
+                    );
+                    approveCompleted[edge.pool][entryCoins[i][j]] = true;
+                }
+            }
+
+            lpTokens[lpTokensAddress[i]] = edge;
+        }
+    }
+
+    /// @notice Set addresses to be no longer recognized as LP tokens
+    /// @param edges list of LP tokens
+    function deleteLpToken(address[] calldata edges) external {
+        for (uint256 i = 0; i < edges.length; i++) {
+            delete lpTokens[edges[i]];
         }
     }
 
@@ -309,6 +529,90 @@ contract Exchange {
         }
     }
 
+    /// @notice Get prebuilt route between two major coins
+    /// @param from major coin to start route from
+    /// @param to major coin that should be end of route
+    /// @return Prebuilt route between major coins
+    function getMajorRoute(address from, address to)
+        external
+        view
+        returns (RouteEdge[] memory)
+    {
+        return internalMajorRoute[from][to];
+    }
+
+    function _exchange(
+        address from,
+        address to,
+        uint256 amountIn
+    ) private returns (uint256) {
+        // this code was written at late evening of 14 Feb
+        // i would like to say to solidity: i love you <3
+        // you're naughty bitch, but anyway
+
+        RouteEdge[] memory edges = buildRoute(from, to);
+
+        uint256 swapAmount = amountIn;
+        for (uint256 i = 0; i < edges.length; i++) {
+            RouteEdge memory edge = edges[i];
+
+            address adapter = adapters[edge.swapProtocol];
+            require(adapter != address(0), "Exchange: adapter not found");
+
+            // using delegatecall for gas savings (no need to transfer tokens
+            // to/from adapter)
+            bytes memory returnedData = adapter.functionDelegateCall(
+                abi.encodeWithSelector(
+                    executeSwapSigHash,
+                    edge.pool,
+                    edge.fromCoin,
+                    edge.toCoin,
+                    swapAmount
+                )
+            );
+            // extract return value from delegatecall
+            swapAmount = abi.decode(returnedData, (uint256));
+        }
+
+        return swapAmount;
+    }
+
+    function _enterLiquidityPool(
+        address from,
+        address to,
+        uint256 amountIn
+    ) private returns (uint256) {
+        LpToken memory edge = lpTokens[to];
+        address adapter = adapters[edge.swapProtocol];
+        require(adapter != address(0), "Exchange: adapter not found");
+
+        // using delegatecall for gas savings (no need to transfer tokens
+        // to adapter)
+        bytes memory returnedData = adapter.functionDelegateCall(
+            abi.encodeWithSelector(enterPoolSigHash, edge.pool, from, amountIn)
+        );
+        // extract return value from delegatecall
+        return abi.decode(returnedData, (uint256));
+    }
+
+    function _exitLiquidityPool(
+        address from,
+        address to,
+        uint256 amountIn
+    ) private returns (uint256) {
+        LpToken memory edge = lpTokens[from];
+        address adapter = adapters[edge.swapProtocol];
+        require(adapter != address(0), "Exchange: adapter not found");
+
+        // using delegatecall for gas savings (no need to transfer tokens
+        // to adapter)
+        bytes memory returnedData = adapter.functionDelegateCall(
+            abi.encodeWithSelector(exitPoolSigHash, edge.pool, to, amountIn)
+        );
+        // extract return value from delegatecall
+        return abi.decode(returnedData, (uint256));
+    }
+
     function reverseRouteEdge(RouteEdge memory route)
         private
         pure
@@ -320,4 +624,6 @@ contract Exchange {
 
         return route;
     }
+
+    receive() external payable {}
 }

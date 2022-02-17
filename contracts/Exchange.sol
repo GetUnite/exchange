@@ -5,11 +5,12 @@ import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
 import "./interfaces/IWrappedEther.sol";
 import "./interfaces/IExchangeAdapter.sol";
 
-contract Exchange is ReentrancyGuard {
+contract Exchange is ReentrancyGuard, AccessControl {
     using SafeERC20 for IERC20;
     using Address for address;
 
@@ -60,6 +61,12 @@ contract Exchange is ReentrancyGuard {
 
     // bytes4(keccak256(bytes("exitPool(address,address,uint256)")))
     bytes4 public constant exitPoolSigHash = 0x660cb8d4;
+
+    constructor(address gnosis) {
+        require(gnosis.isContract(), "Exchange: not contract");
+        _grantRole(DEFAULT_ADMIN_ROLE, gnosis);
+        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    }
 
     /// @notice Execute exchange of coins through predefined routes
     /// @param from swap input token
@@ -149,7 +156,7 @@ contract Exchange is ReentrancyGuard {
     function registerAdapters(
         address[] calldata adapters_,
         uint32[] calldata protocolId
-    ) external {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 length = adapters_.length;
         require(
             adapters_.length == protocolId.length,
@@ -162,7 +169,10 @@ contract Exchange is ReentrancyGuard {
 
     /// @notice Unregister swap/lp token adapters
     /// @param protocolId protocol id of adapter to remove
-    function unregisterAdapters(uint32[] calldata protocolId) external {
+    function unregisterAdapters(uint32[] calldata protocolId)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         uint256 length = protocolId.length;
         for (uint256 i = 0; i < length; i++) {
             delete adapters[protocolId[i]];
@@ -173,7 +183,10 @@ contract Exchange is ReentrancyGuard {
     /// @dev In order for swap from/to minor coin to be working, `toCoin` should
     /// be registered as major
     /// @param edges array of edges to store
-    function createMinorCoinEdge(RouteEdge[] calldata edges) external {
+    function createMinorCoinEdge(RouteEdge[] calldata edges)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         uint256 length = edges.length;
         for (uint256 i = 0; i < length; i++) {
             // validate protocol id - zero is interpreted as
@@ -206,7 +219,10 @@ contract Exchange is ReentrancyGuard {
 
     /// @notice Remove internal minor route piece
     /// @param edges source coin of route to delete
-    function deleteMinorCoinEdge(address[] calldata edges) external {
+    function deleteMinorCoinEdge(address[] calldata edges)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         for (uint256 i = 0; i < edges.length; i++) {
             delete minorCoins[edges[i]];
         }
@@ -214,7 +230,10 @@ contract Exchange is ReentrancyGuard {
 
     /// @notice Create route between two tokens and set them as major
     /// @param routes array of routes
-    function createInternalMajorRoutes(RouteEdge[][] calldata routes) external {
+    function createInternalMajorRoutes(RouteEdge[][] calldata routes)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         for (uint256 i = 0; i < routes.length; i++) {
             RouteEdge[] memory route = routes[i];
 
@@ -297,7 +316,7 @@ contract Exchange is ReentrancyGuard {
         address[] calldata from,
         address[] calldata to,
         bool removeMajor
-    ) external {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(from.length == to.length, "Exchange: length discrep");
         for (uint256 i = 0; i < from.length; i++) {
             delete internalMajorRoute[from[i]][to[i]];
@@ -314,7 +333,7 @@ contract Exchange is ReentrancyGuard {
     function removeApproval(
         address[] calldata coins,
         address[] calldata spenders
-    ) external {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(coins.length == spenders.length, "Exchange: length discrep");
         for (uint256 i = 0; i < coins.length; i++) {
             IERC20(coins[i]).safeApprove(spenders[i], 0);
@@ -328,7 +347,7 @@ contract Exchange is ReentrancyGuard {
     function createApproval(
         address[] calldata coins,
         address[] calldata spenders
-    ) external {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(coins.length == spenders.length, "Exchange: length discrep");
         for (uint256 i = 0; i < coins.length; i++) {
             IERC20(coins[i]).safeApprove(spenders[i], type(uint256).max);
@@ -344,7 +363,7 @@ contract Exchange is ReentrancyGuard {
         LpToken[] calldata edges,
         address[] calldata lpTokensAddress,
         address[][] calldata entryCoins
-    ) external {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(
             edges.length == entryCoins.length &&
                 entryCoins.length == lpTokensAddress.length,
@@ -370,10 +389,23 @@ contract Exchange is ReentrancyGuard {
 
     /// @notice Set addresses to be no longer recognized as LP tokens
     /// @param edges list of LP tokens
-    function deleteLpToken(address[] calldata edges) external {
+    function deleteLpToken(address[] calldata edges)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         for (uint256 i = 0; i < edges.length; i++) {
             delete lpTokens[edges[i]];
         }
+    }
+
+    /// @inheritdoc	AccessControl
+    function grantRole(bytes32 role, address account)
+        public
+        override
+        onlyRole(getRoleAdmin(role))
+    {
+        require(account.isContract(), "Exchange: not contract");
+        _grantRole(role, account);
     }
 
     /// @notice Build highest liquidity swap route between two ERC20 coins

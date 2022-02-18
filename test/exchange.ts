@@ -88,7 +88,7 @@ describe("Exchange", async () => {
         ];
         wethFraxRoute = [
             // WETH - USDT - FRAX
-            { swapProtocol: 1, pool: fraxPoolAddress, fromCoin: weth.address, toCoin: usdt.address },
+            { swapProtocol: 2, pool: renbtcAddress, fromCoin: weth.address, toCoin: usdt.address },
             { swapProtocol: 1, pool: fraxPoolAddress, fromCoin: usdt.address, toCoin: frax.address },
         ];
         usdtFraxRoute = [
@@ -178,7 +178,7 @@ describe("Exchange", async () => {
 
     beforeEach(async () => {
         const Exchange = await ethers.getContractFactory("Exchange");
-        exchange = await Exchange.deploy();
+        exchange = await Exchange.deploy(dai.address, true);
     });
 
     it("Should build correct routes", async () => {
@@ -1009,6 +1009,63 @@ describe("Exchange", async () => {
 
         await exchange.exchange(weth.address, crv3CryptoLp.address, await weth.balanceOf(signers[0].address), 0);
         await exchange.exchange(crv3CryptoLp.address, weth.address, await crv3CryptoLp.balanceOf(signers[0].address), 0);
-
     })
+
+    it("Should not deploy contract (admin address is not contract)", async () => {
+        const Exchange = await ethers.getContractFactory("Exchange");
+        const tx = Exchange.deploy(signers[1].address, true);
+        await expect(tx).to.be.revertedWith("Exchange: not contract");
+    });
+
+    it("Should check roles after deployment", async () => {
+        const Exchange = await ethers.getContractFactory("Exchange");
+        const exchangeTest = await Exchange.deploy(dai.address, true);
+
+        expect(await exchangeTest.hasRole(await exchange.DEFAULT_ADMIN_ROLE(), dai.address)).to.be.true;
+        expect(await exchangeTest.hasRole(await exchange.DEFAULT_ADMIN_ROLE(), signers[0].address)).to.be.true;
+
+        const exchangeNotTest = await Exchange.deploy(dai.address, false);
+        expect(await exchangeNotTest.hasRole(await exchange.DEFAULT_ADMIN_ROLE(), dai.address)).to.be.true;
+        expect(await exchangeNotTest.hasRole(await exchange.DEFAULT_ADMIN_ROLE(), signers[0].address)).to.be.false;
+    });
+
+    it("Should grant role to contract", async () => {
+        await exchange.grantRole(await exchange.DEFAULT_ADMIN_ROLE(), usdc.address);
+    });
+
+    it("Should not grant role to non-contract", async () => {
+        await expect(exchange.grantRole(await exchange.DEFAULT_ADMIN_ROLE(), signers[1].address)).to.be.revertedWith("Exchange: not contract");
+    });
+
+    it("Should correctly overwrite major routes", async () => {
+        const wrongRoute: Route = [
+            // WETH - USDT - FRAX
+            { swapProtocol: 1, pool: fraxPoolAddress, fromCoin: weth.address, toCoin: usdt.address },
+            { swapProtocol: 1, pool: fraxPoolAddress, fromCoin: usdt.address, toCoin: frax.address },
+        ];
+
+        const correctRoute: Route = [
+            // WETH - USDT - FRAX
+            { swapProtocol: 2, pool: renbtcAddress, fromCoin: weth.address, toCoin: usdt.address },
+            { swapProtocol: 1, pool: fraxPoolAddress, fromCoin: usdt.address, toCoin: frax.address },
+        ];
+
+        const amount = parseEther("1.0");
+
+        await exchange.createInternalMajorRoutes([wrongRoute]);
+
+        const ThreeCrypto = await ethers.getContractFactory("Curve3CryptoAdapter");
+        const Frax = await ethers.getContractFactory("CurveFraxAdapter");
+
+        const threeCrypto = await ThreeCrypto.deploy();
+        const fraxAdapter = await Frax.deploy();
+
+        await exchange.registerAdapters([fraxAdapter.address, threeCrypto.address], [1, 2]);
+
+        await expect(exchange.exchange(zeroAddr, frax.address, amount, 0, { value: amount })).to.be.revertedWith("CurveFraxAdapter: can't swap");
+
+        await exchange.createInternalMajorRoutes([correctRoute]);
+
+        await exchange.exchange(zeroAddr, frax.address, amount, 0, { value: amount });
+    });
 });

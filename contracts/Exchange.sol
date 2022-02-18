@@ -62,10 +62,10 @@ contract Exchange is ReentrancyGuard, AccessControl {
     // bytes4(keccak256(bytes("exitPool(address,address,uint256)")))
     bytes4 public constant exitPoolSigHash = 0x660cb8d4;
 
-    constructor(address gnosis) {
+    constructor(address gnosis, bool isTesting) {
         require(gnosis.isContract(), "Exchange: not contract");
         _grantRole(DEFAULT_ADMIN_ROLE, gnosis);
-        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        if (isTesting) _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     /// @notice Execute exchange of coins through predefined routes
@@ -241,6 +241,10 @@ contract Exchange is ReentrancyGuard, AccessControl {
             address start = route[0].fromCoin;
             address end = route[route.length - 1].toCoin;
             require(start != end, "Exchange: route is loop");
+
+            if (internalMajorRoute[start][end].length != 0) {
+                delete internalMajorRoute[start][end];
+            }
 
             // validate protocol id - zero is interpreted as non-existing route
             require(route[0].swapProtocol != 0, "Exchange: protocol type !set");

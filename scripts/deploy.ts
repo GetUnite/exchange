@@ -13,7 +13,6 @@ async function main() {
   // manually to make sure everything is compiled
   // await hre.run('compile');
 
-  // TO-DO: Write deploy scripts
 }
 
 // We recommend this pattern to be able to use async/await everywhere

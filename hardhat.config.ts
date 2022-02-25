@@ -31,6 +31,13 @@ const config: HardhatUserConfig = {
         url: process.env.FORKING_URL as string
       }
     },
+    devnet: {
+      url: process.env.DEVNET_URL,
+      gasPrice: "auto",
+      accounts: {
+        mnemonic: process.env.MNEMONIC,
+      },
+    },
     rinkeby: {
       url: process.env.RINKEBY_URL,
       gasPrice: "auto",
@@ -54,6 +61,13 @@ const config: HardhatUserConfig = {
     },
     matictestnet: {
       url: process.env.POLYGON_TESTNET_URL,
+      gasPrice: "auto",
+      accounts: {
+        mnemonic: process.env.MNEMONIC,
+      },
+    },
+    mainnet: {
+      url: process.env.FORKING_URL,
       gasPrice: "auto",
       accounts: {
         mnemonic: process.env.MNEMONIC,

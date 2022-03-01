@@ -4,7 +4,7 @@
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumberish } from "ethers";
+import { BigNumber, BigNumberish, ContractReceipt } from "ethers";
 import { formatEther, formatUnits, parseEther, parseUnits } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 import { Exchange, IERC20, IWrappedEther } from "../typechain";
@@ -27,7 +27,10 @@ let wethUsdtRoute: Route, wethUsdcRoute: Route, wethDaiRoute: Route, usdtWethRou
     wethFraxRoute: Route, usdtFraxRoute: Route, daiFraxRoute: Route, usdcFraxRoute: Route, fraxUsdcRoute: Route, fraxDaiRoute: Route,
     fraxUsdtRoute: Route, fraxWethRoute: Route;
 
-let cvxEdge: Edge, crvEdge: Edge, shibEdge: Edge;
+let threeCrvEdge: Edge;
+
+const threeCrvPool = "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7";
+
 
 const renbtcAddress = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46";
 const fraxPoolAddress = "0xd632f22692FaC7611d2AA1C0D552930D43CAEd3B";
@@ -122,6 +125,8 @@ function initializeRoutes() {
         { swapProtocol: 1, pool: fraxPoolAddress, fromCoin: frax.address, toCoin: usdt.address },
         { swapProtocol: 2, pool: renbtcAddress, fromCoin: usdt.address, toCoin: weth.address },
     ];
+
+    threeCrvEdge = { swapProtocol: 3, pool: threeCrvPool, fromCoin: threeCrvLp.address, toCoin: usdc.address };
 }
 
 async function main() {
@@ -180,6 +185,15 @@ async function main() {
         ["0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",
             "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",
             "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7"]);
+
+    // not executed yet
+    const ThreeCrvSwap = await ethers.getContractFactory("Curve3CrvSwapAdapter");
+
+    const threeCrvAdapter = await (await ThreeCrvSwap.deploy()).deployed();
+
+    await (await exchange.registerAdapters([threeCrvAdapter.address], [3])).wait();
+
+    await (await exchange.createMinorCoinEdge([threeCrvEdge])).wait();
 }
 
 // We recommend this pattern to be able to use async/await everywhere

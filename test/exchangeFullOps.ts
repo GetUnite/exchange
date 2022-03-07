@@ -25,13 +25,13 @@ describe("Exchange (full setup operations)", async () => {
         wethFraxRoute: Route, usdtFraxRoute: Route, daiFraxRoute: Route, usdcFraxRoute: Route, fraxUsdcRoute: Route, fraxDaiRoute: Route,
         fraxUsdtRoute: Route, fraxWethRoute: Route;
 
-    let threeCrvEdge: Edge;
+    let threeCrvEdge: Edge, cvxEdge: Edge, crvEdge: Edge;
 
     const renbtcAddress = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46";
     const fraxPoolAddress = "0xd632f22692FaC7611d2AA1C0D552930D43CAEd3B";
     const threeCrvPool = "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7";
     const cvxCurvePool = "0xB576491F1E6e5E62f1d8F26062Ee822B40B0E0d4";
-    const crvUnipool = "0x4c83A7f819A5c37D64B4c5A2f8238Ea082fA1f4e";
+    const crvCurvePool = "0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511";
     const uint256MaxValue = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
     const nativeEth = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
     const zeroAddr = "0x0000000000000000000000000000000000000000";
@@ -123,6 +123,9 @@ describe("Exchange (full setup operations)", async () => {
         ];
 
         threeCrvEdge = { swapProtocol: 3, pool: threeCrvPool, fromCoin: threeCrvLp.address, toCoin: usdc.address };
+
+        cvxEdge = { swapProtocol: 4, pool: cvxCurvePool, fromCoin: cvx.address, toCoin: weth.address };
+        crvEdge = { swapProtocol: 5, pool: crvCurvePool, fromCoin: crv.address, toCoin: weth.address };
     }
 
     function reverseEdge(edge: Edge): Edge {
@@ -164,12 +167,14 @@ describe("Exchange (full setup operations)", async () => {
         const ThreeCrypto = await ethers.getContractFactory("Curve3CryptoAdapter");
         const Frax = await ethers.getContractFactory("CurveFraxAdapter");
         const ThreeCrvSwap = await ethers.getContractFactory("Curve3CrvSwapAdapter");
+        const CvxAdapter = await ethers.getContractFactory("CurveCvxAdapter");
+        const CrvAdapter = await ethers.getContractFactory("CurveCrvAdapter");
 
         const threeCrypto = await (await ThreeCrypto.deploy()).deployed();
-
         const fraxAdapter = await (await Frax.deploy()).deployed();
-
         const threeCrvAdapter = await (await ThreeCrvSwap.deploy()).deployed();
+        const cvxAdapter = await (await CvxAdapter.deploy()).deployed();
+        const crvAdapter = await (await CrvAdapter.deploy()).deployed();
 
         await (await exchange.registerAdapters([fraxAdapter.address, threeCrypto.address], [1, 2])).wait();
 
@@ -185,8 +190,12 @@ describe("Exchange (full setup operations)", async () => {
         // not executed yet
 
         await (await exchange.registerAdapters([threeCrvAdapter.address], [3])).wait();
+        await (await exchange.registerAdapters([cvxAdapter.address], [4])).wait();
+        await (await exchange.registerAdapters([crvAdapter.address], [5])).wait();
 
         await (await exchange.createMinorCoinEdge([threeCrvEdge])).wait();
+        await (await exchange.createMinorCoinEdge([cvxEdge])).wait();
+        await (await exchange.createMinorCoinEdge([crvEdge])).wait();
     }
 
     before(async () => {
@@ -231,6 +240,13 @@ describe("Exchange (full setup operations)", async () => {
         await usdt.approve(exchange.address, uint256MaxValue);
         await dai.approve(exchange.address, uint256MaxValue);
         await frax.approve(exchange.address, uint256MaxValue);
+        await crv.approve(exchange.address, uint256MaxValue);
+        await cvx.approve(exchange.address, uint256MaxValue);
+
+        await signers[0].sendTransaction({
+            to: signers[1].address,
+            value: parseEther("1.0")
+        })
 
         // get usdc
         balBefore = await usdc.balanceOf(signers[0].address);
@@ -259,6 +275,20 @@ describe("Exchange (full setup operations)", async () => {
         console.log("Swapped", ethAmountString,
             "ETH for", formatUnits((await frax.balanceOf(signers[0].address)).sub(balBefore)),
             "FRAX, gas used:", tx.cumulativeGasUsed.toString());
+
+        // get crv
+        balBefore = await crv.balanceOf(signers[0].address);
+        tx = await (await exchange.exchange(nativeEth, crv.address, ethAmount, 0, { value: ethAmount })).wait();
+        console.log("Swapped", ethAmountString,
+            "ETH for", formatUnits((await crv.balanceOf(signers[0].address)).sub(balBefore)),
+            "CRV, gas used:", tx.cumulativeGasUsed.toString());
+
+        // get cvx
+        balBefore = await cvx.balanceOf(signers[0].address);
+        tx = await (await exchange.exchange(nativeEth, cvx.address, ethAmount, 0, { value: ethAmount })).wait();
+        console.log("Swapped", ethAmountString,
+            "ETH for", formatUnits((await cvx.balanceOf(signers[0].address)).sub(balBefore)),
+            "CVX, gas used:", tx.cumulativeGasUsed.toString());
 
         balBefore = await threeCrvLp.balanceOf(signers[0].address);
         amount = await usdc.balanceOf(signers[0].address);

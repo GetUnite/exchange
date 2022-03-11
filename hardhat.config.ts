@@ -32,7 +32,7 @@ const config: HardhatUserConfig = {
       }
     },
     devnet: {
-      url: process.env.DEVNET_URL,
+      url: process.env.DEVNET,
       timeout: 100000,
       gasPrice: 40819231622,
       accounts: {

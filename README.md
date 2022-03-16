@@ -67,6 +67,8 @@ This repo contains all the Alluo Exchange, a series of contract allowing users o
 The Exchange is made up of a few components: Adaptors, Routes and Major/Minor coints. 
 
 Each component is editable by the owner of the contract and can be configured for the most liquidity by said owner.
+
+All the addresses of the contracts deployed to all the networks that are part of the Alluo Protocol are available here: [Protocol Library](https://library.alluo.com/)
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 

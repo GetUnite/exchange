@@ -243,13 +243,13 @@ describe("Exchange (full setup operations)", async () => {
 
 
     it("Should check all available swaps", async () => {
-
-
-        const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx]
+        const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx, weth];
+        await weth.deposit({ value: parseEther("100.0") });
 
         // get all supported coins - swap ETH for all coins
         for (let i = 0; i < supportedCoinList.length; i++) {
             const coin = supportedCoinList[i];
+            if (coin.address == weth.address) continue;
             const ethToCoinAmount = parseEther("10.0");
             await testSwap(nativeEth, coin.address, ethToCoinAmount);
         }
@@ -269,6 +269,7 @@ describe("Exchange (full setup operations)", async () => {
         // swap rest of all coins to eth
         for (let i = 0; i < supportedCoinList.length; i++) {
             const coin = supportedCoinList[i];
+            if (coin.address == weth.address) continue;
             const amount = await coin.balanceOf(signers[0].address);
             await testSwap(coin.address, nativeEth, amount);
         }

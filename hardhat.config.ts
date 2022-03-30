@@ -28,7 +28,8 @@ const config: HardhatUserConfig = {
       },
       forking: {
         enabled: process.env.FORKING_ENABLED == "true",
-        url: process.env.FORKING_URL as string
+        url: process.env.FORKING_URL as string,
+        blockNumber: 14487893
       }
     },
     devnet: {

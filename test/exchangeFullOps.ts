@@ -1,9 +1,8 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { expect } from "chai";
-import { BigNumber, BigNumberish, ContractReceipt } from "ethers";
+import { BigNumberish } from "ethers";
 import { formatEther, formatUnits, parseEther, parseUnits } from "ethers/lib/utils";
 import { ethers } from "hardhat";
-import { Exchange, IERC20, IWrappedEther } from "../typechain";
+import { Exchange, IERC20Metadata, IWrappedEther } from "../typechain";
 
 describe("Exchange (full setup operations)", async () => {
     type Edge = {
@@ -15,23 +14,23 @@ describe("Exchange (full setup operations)", async () => {
     type Route = Edge[];
 
     let signers: SignerWithAddress[];
-    let investor: SignerWithAddress;
-    let exchange: Exchange, weth: IWrappedEther, usdt: IERC20, usdc: IERC20,
-        dai: IERC20, cvx: IERC20, crv: IERC20, shib: IERC20, frax: IERC20, fraxPoolLp: IERC20,
-        threeCrvLp: IERC20, crv3CryptoLp: IERC20;
+    let exchange: Exchange, weth: IWrappedEther, usdt: IERC20Metadata, usdc: IERC20Metadata,
+        dai: IERC20Metadata, cvx: IERC20Metadata, crv: IERC20Metadata, frax: IERC20Metadata,
+        threeCrvLp: IERC20Metadata, crv3CryptoLp: IERC20Metadata, ust: IERC20Metadata;
 
     let wethUsdtRoute: Route, wethUsdcRoute: Route, wethDaiRoute: Route, usdtWethRoute: Route, usdtUsdcRoute: Route, usdtDaiRoute: Route,
         usdcWethRoute: Route, usdcUsdtRoute: Route, usdcDaiRoute: Route, daiUsdcRoute: Route, daiUsdtRoute: Route, daiWethRoute: Route,
         wethFraxRoute: Route, usdtFraxRoute: Route, daiFraxRoute: Route, usdcFraxRoute: Route, fraxUsdcRoute: Route, fraxDaiRoute: Route,
         fraxUsdtRoute: Route, fraxWethRoute: Route;
 
-    let threeCrvEdge: Edge, cvxEdge: Edge, crvEdge: Edge;
+    let threeCrvEdge: Edge, cvxEdge: Edge, crvEdge: Edge, ustEdge: Edge;
 
     const renbtcAddress = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46";
     const fraxPoolAddress = "0xd632f22692FaC7611d2AA1C0D552930D43CAEd3B";
     const threeCrvPool = "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7";
     const cvxCurvePool = "0xB576491F1E6e5E62f1d8F26062Ee822B40B0E0d4";
     const crvCurvePool = "0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511";
+    const ustCurveAddress = "0x890f4e345B1dAED0367A877a1612f86A1f86985f";
     const uint256MaxValue = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
     const nativeEth = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
     const zeroAddr = "0x0000000000000000000000000000000000000000";
@@ -123,30 +122,9 @@ describe("Exchange (full setup operations)", async () => {
         ];
 
         threeCrvEdge = { swapProtocol: 3, pool: threeCrvPool, fromCoin: threeCrvLp.address, toCoin: usdc.address };
-
         cvxEdge = { swapProtocol: 4, pool: cvxCurvePool, fromCoin: cvx.address, toCoin: weth.address };
         crvEdge = { swapProtocol: 5, pool: crvCurvePool, fromCoin: crv.address, toCoin: weth.address };
-    }
-
-    function reverseEdge(edge: Edge): Edge {
-        return {
-            swapProtocol: edge.swapProtocol,
-            pool: edge.pool,
-            fromCoin: edge.toCoin,
-            toCoin: edge.fromCoin
-        };
-    }
-
-    function validateRoute(actual: any[], expected: any[]) {
-        expect(actual.length).to.be.equal(expected.length);
-        for (let i = 0; i < actual.length; i++) {
-            const x = actual[i];
-            const y = expected[i];
-            expect(x.swapProtocol).to.be.equal(y.swapProtocol);
-            expect(x.pool).to.be.equal(y.pool);
-            expect(x.fromCoin).to.be.equal(y.fromCoin);
-            expect(x.toCoin).to.be.equal(y.toCoin);
-        }
+        ustEdge = { swapProtocol: 6, pool: ustCurveAddress, fromCoin: ust.address, toCoin: usdt.address };
     }
 
     async function executeSetup() {
@@ -187,8 +165,6 @@ describe("Exchange (full setup operations)", async () => {
                 "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",
                 "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7"]);
 
-        // not executed yet
-
         await (await exchange.registerAdapters([threeCrvAdapter.address], [3])).wait();
         await (await exchange.registerAdapters([cvxAdapter.address], [4])).wait();
         await (await exchange.registerAdapters([crvAdapter.address], [5])).wait();
@@ -196,6 +172,14 @@ describe("Exchange (full setup operations)", async () => {
         await (await exchange.createMinorCoinEdge([threeCrvEdge])).wait();
         await (await exchange.createMinorCoinEdge([cvxEdge])).wait();
         await (await exchange.createMinorCoinEdge([crvEdge])).wait();
+
+        // phase 3 - add of UST coin
+
+        const UstAdapter = await ethers.getContractFactory("CurveUstAdapter");
+        const ustAdapter = await (await UstAdapter.deploy()).deployed();
+
+        await (await exchange.registerAdapters([ustAdapter.address], [6])).wait();
+        await (await exchange.createMinorCoinEdge([ustEdge])).wait();
     }
 
     before(async () => {
@@ -206,21 +190,18 @@ describe("Exchange (full setup operations)", async () => {
             [investorAddress]
         );
 
-        investor = await ethers.getSigner(investorAddress);
-
         signers = await ethers.getSigners();
 
         weth = await ethers.getContractAt("IWrappedEther", "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2");
-        usdt = await ethers.getContractAt("IERC20", "0xdAC17F958D2ee523a2206206994597C13D831ec7");
-        usdc = await ethers.getContractAt("IERC20", "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
-        dai = await ethers.getContractAt("IERC20", "0x6B175474E89094C44Da98b954EedeAC495271d0F");
-        cvx = await ethers.getContractAt("IERC20", "0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B");
-        crv = await ethers.getContractAt("IERC20", "0xD533a949740bb3306d119CC777fa900bA034cd52");
-        shib = await ethers.getContractAt("IERC20", "0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE");
-        frax = await ethers.getContractAt("IERC20", "0x853d955aCEf822Db058eb8505911ED77F175b99e");
-        fraxPoolLp = await ethers.getContractAt("IERC20", fraxPoolAddress);
-        threeCrvLp = await ethers.getContractAt("IERC20", "0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490");
-        crv3CryptoLp = await ethers.getContractAt("IERC20", "0xc4AD29ba4B3c580e6D59105FFf484999997675Ff");
+        usdt = await ethers.getContractAt("IERC20Metadata", "0xdAC17F958D2ee523a2206206994597C13D831ec7");
+        usdc = await ethers.getContractAt("IERC20Metadata", "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+        dai = await ethers.getContractAt("IERC20Metadata", "0x6B175474E89094C44Da98b954EedeAC495271d0F");
+        ust = await ethers.getContractAt("IERC20Metadata", "0xa47c8bf37f92aBed4A126BDA807A7b7498661acD");
+        cvx = await ethers.getContractAt("IERC20Metadata", "0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B");
+        crv = await ethers.getContractAt("IERC20Metadata", "0xD533a949740bb3306d119CC777fa900bA034cd52");
+        frax = await ethers.getContractAt("IERC20Metadata", "0x853d955aCEf822Db058eb8505911ED77F175b99e");
+        threeCrvLp = await ethers.getContractAt("IERC20Metadata", "0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490");
+        crv3CryptoLp = await ethers.getContractAt("IERC20Metadata", "0xc4AD29ba4B3c580e6D59105FFf484999997675Ff");
 
         initializeRoutes();
     });
@@ -229,106 +210,67 @@ describe("Exchange (full setup operations)", async () => {
         await executeSetup();
     });
 
+    async function testSwap(fromAddress: string, toAddress: string, amount: BigNumberish) {
+        if (fromAddress == zeroAddr || fromAddress == nativeEth) {
+            const to = await ethers.getContractAt("IERC20Metadata", toAddress);
+            const balBefore = await to.balanceOf(signers[0].address);
+            const tx = await (await exchange.exchange(nativeEth, to.address, amount, 0, { value: amount })).wait();
+            console.log("Swapped", formatEther(amount),
+                "ETH for", formatUnits((await to.balanceOf(signers[0].address)).sub(balBefore), await to.decimals()),
+                await to.symbol() + ",", "gas used:", tx.cumulativeGasUsed.toString());
+            return;
+        }
+        if (toAddress == zeroAddr || toAddress == nativeEth) {
+            const from = await ethers.getContractAt("IERC20Metadata", fromAddress);
+            await from.approve(exchange.address, amount);
+            const balBefore = await signers[0].getBalance();
+            const tx = await (await exchange.exchange(from.address, toAddress, amount, 0)).wait();
+            console.log("Swapped", formatUnits(amount, await from.decimals()),
+                await from.symbol(), "for", formatEther((await signers[0].getBalance()).sub(balBefore)),
+                "ETH, gas used:", tx.cumulativeGasUsed.toString());
+            return;
+        }
+
+        const from = await ethers.getContractAt("IERC20Metadata", fromAddress);
+        await from.approve(exchange.address, amount);
+        const to = await ethers.getContractAt("IERC20Metadata", toAddress);
+        const balBefore = await to.balanceOf(signers[0].address);
+        const tx = await (await exchange.exchange(fromAddress, toAddress, amount, 0)).wait();
+        console.log("Swapped", formatUnits(amount, await from.decimals()),
+            await from.symbol(), "for", formatUnits((await to.balanceOf(signers[0].address)).sub(balBefore), await to.decimals()),
+            await to.symbol() + ",", "gas used:", tx.cumulativeGasUsed.toString());
+    }
+
+
     it("Should check all available swaps", async () => {
-        let tx: ContractReceipt;
-        let balBefore: BigNumber;
-        let amount: BigNumber;
-        const ethAmountString = "1.0";
-        const ethAmount = parseEther(ethAmountString);
 
-        await usdc.approve(exchange.address, uint256MaxValue);
-        await usdt.approve(exchange.address, uint256MaxValue);
-        await dai.approve(exchange.address, uint256MaxValue);
-        await frax.approve(exchange.address, uint256MaxValue);
-        await crv.approve(exchange.address, uint256MaxValue);
-        await cvx.approve(exchange.address, uint256MaxValue);
 
-        await signers[0].sendTransaction({
-            to: signers[1].address,
-            value: parseEther("1.0")
-        })
+        const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx]
 
-        // get usdc
-        balBefore = await usdc.balanceOf(signers[0].address);
-        tx = await (await exchange.exchange(nativeEth, usdc.address, ethAmount, 0, { value: ethAmount })).wait();
-        console.log("Swapped", ethAmountString,
-            "ETH for", formatUnits((await usdc.balanceOf(signers[0].address)).sub(balBefore), 6),
-            "USDC, gas used:", tx.cumulativeGasUsed.toString());
+        // get all supported coins - swap ETH for all coins
+        for (let i = 0; i < supportedCoinList.length; i++) {
+            const coin = supportedCoinList[i];
+            const ethToCoinAmount = parseEther("10.0");
+            await testSwap(nativeEth, coin.address, ethToCoinAmount);
+        }
 
-        // get usdt
-        balBefore = await usdt.balanceOf(signers[0].address);
-        tx = await (await exchange.exchange(nativeEth, usdt.address, ethAmount, 0, { value: ethAmount })).wait();
-        console.log("Swapped", ethAmountString,
-            "ETH for", formatUnits((await usdt.balanceOf(signers[0].address)).sub(balBefore), 6),
-            "USDT, gas used:", tx.cumulativeGasUsed.toString());
+        // swap all combinations of all tokens
+        for (let i = 0; i < supportedCoinList.length; i++) {
+            for (let j = 0; j < supportedCoinList.length; j++) {
+                if (i == j) continue;
 
-        // get dai
-        balBefore = await dai.balanceOf(signers[0].address);
-        tx = await (await exchange.exchange(nativeEth, dai.address, ethAmount, 0, { value: ethAmount })).wait();
-        console.log("Swapped", ethAmountString,
-            "ETH for", formatUnits((await dai.balanceOf(signers[0].address)).sub(balBefore)),
-            "DAI, gas used:", tx.cumulativeGasUsed.toString());
+                const coinIn = supportedCoinList[i];
+                const coinOut = supportedCoinList[j];
+                const oneToken = parseUnits("1.0", await coinIn.decimals());
+                await testSwap(coinIn.address, coinOut.address, oneToken);
+            }
+        }
 
-        // get frax
-        balBefore = await frax.balanceOf(signers[0].address);
-        tx = await (await exchange.exchange(nativeEth, frax.address, ethAmount, 0, { value: ethAmount })).wait();
-        console.log("Swapped", ethAmountString,
-            "ETH for", formatUnits((await frax.balanceOf(signers[0].address)).sub(balBefore)),
-            "FRAX, gas used:", tx.cumulativeGasUsed.toString());
-
-        // get crv
-        balBefore = await crv.balanceOf(signers[0].address);
-        tx = await (await exchange.exchange(nativeEth, crv.address, ethAmount, 0, { value: ethAmount })).wait();
-        console.log("Swapped", ethAmountString,
-            "ETH for", formatUnits((await crv.balanceOf(signers[0].address)).sub(balBefore)),
-            "CRV, gas used:", tx.cumulativeGasUsed.toString());
-
-        // get cvx
-        balBefore = await cvx.balanceOf(signers[0].address);
-        tx = await (await exchange.exchange(nativeEth, cvx.address, ethAmount, 0, { value: ethAmount })).wait();
-        console.log("Swapped", ethAmountString,
-            "ETH for", formatUnits((await cvx.balanceOf(signers[0].address)).sub(balBefore)),
-            "CVX, gas used:", tx.cumulativeGasUsed.toString());
-
-        balBefore = await threeCrvLp.balanceOf(signers[0].address);
-        amount = await usdc.balanceOf(signers[0].address);
-        tx = await (await exchange.exchange(usdc.address, threeCrvLp.address, amount, 0)).wait();
-        console.log("Swapped", formatUnits(amount, 6),
-            "USDC for", formatUnits((await threeCrvLp.balanceOf(signers[0].address)).sub(balBefore)),
-            "3Crv, gas used:", tx.cumulativeGasUsed.toString());
-
-        balBefore = await threeCrvLp.balanceOf(signers[0].address);
-        amount = await usdt.balanceOf(signers[0].address);
-        tx = await (await exchange.exchange(usdt.address, threeCrvLp.address, amount, 0)).wait();
-        console.log("Swapped", formatUnits(amount, 6),
-            "USDT for", formatUnits((await threeCrvLp.balanceOf(signers[0].address)).sub(balBefore)),
-            "3Crv, gas used:", tx.cumulativeGasUsed.toString());
-
-        balBefore = await threeCrvLp.balanceOf(signers[0].address);
-        amount = (await dai.balanceOf(signers[0].address)).div(2);
-        tx = await (await exchange.exchange(dai.address, threeCrvLp.address, amount, 0)).wait();
-        console.log("Swapped", formatUnits(amount),
-            "DAI for", formatUnits((await threeCrvLp.balanceOf(signers[0].address)).sub(balBefore)),
-            "3Crv, gas used:", tx.cumulativeGasUsed.toString());
-
-        balBefore = await threeCrvLp.balanceOf(signers[0].address);
-        amount = await dai.balanceOf(signers[0].address);
-        tx = await (await exchange.exchange(dai.address, threeCrvLp.address, amount, 0)).wait();
-        console.log("Swapped", formatUnits(amount),
-            "DAI for", formatUnits((await threeCrvLp.balanceOf(signers[0].address)).sub(balBefore)),
-            "3Crv, gas used:", tx.cumulativeGasUsed.toString());
-
-        balBefore = await threeCrvLp.balanceOf(signers[0].address);
-        amount = await frax.balanceOf(signers[0].address);
-        tx = await (await exchange.exchange(frax.address, threeCrvLp.address, amount, 0)).wait();
-        console.log("Swapped", formatUnits(amount),
-            "FRAX for", formatUnits((await threeCrvLp.balanceOf(signers[0].address)).sub(balBefore)),
-            "3Crv, gas used:", tx.cumulativeGasUsed.toString());
-
-        balBefore = await threeCrvLp.balanceOf(signers[0].address);
-        tx = await (await exchange.exchange(nativeEth, threeCrvLp.address, ethAmount, 0, { value: ethAmount })).wait();
-        console.log("Swapped", ethAmountString,
-            "ETH for", formatUnits((await threeCrvLp.balanceOf(signers[0].address)).sub(balBefore)),
-            "3Crv, gas used:", tx.cumulativeGasUsed.toString());
+        // swap rest of all coins to eth
+        for (let i = 0; i < supportedCoinList.length; i++) {
+            const coin = supportedCoinList[i];
+            const amount = await coin.balanceOf(signers[0].address);
+            await testSwap(coin.address, nativeEth, amount);
+        }
     });
 });

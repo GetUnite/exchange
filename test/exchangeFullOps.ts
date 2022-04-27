@@ -16,14 +16,15 @@ describe("Exchange (full setup operations)", async () => {
     let signers: SignerWithAddress[];
     let exchange: Exchange, weth: IWrappedEther, usdt: IERC20Metadata, usdc: IERC20Metadata,
         dai: IERC20Metadata, cvx: IERC20Metadata, crv: IERC20Metadata, frax: IERC20Metadata,
-        threeCrvLp: IERC20Metadata, crv3CryptoLp: IERC20Metadata, ust: IERC20Metadata;
+        threeCrvLp: IERC20Metadata, crv3CryptoLp: IERC20Metadata, ust: IERC20Metadata,
+        alluo: IERC20Metadata;
 
     let wethUsdtRoute: Route, wethUsdcRoute: Route, wethDaiRoute: Route, usdtWethRoute: Route, usdtUsdcRoute: Route, usdtDaiRoute: Route,
         usdcWethRoute: Route, usdcUsdtRoute: Route, usdcDaiRoute: Route, daiUsdcRoute: Route, daiUsdtRoute: Route, daiWethRoute: Route,
         wethFraxRoute: Route, usdtFraxRoute: Route, daiFraxRoute: Route, usdcFraxRoute: Route, fraxUsdcRoute: Route, fraxDaiRoute: Route,
         fraxUsdtRoute: Route, fraxWethRoute: Route;
 
-    let threeCrvEdge: Edge, cvxEdge: Edge, crvEdge: Edge, ustEdge: Edge;
+    let threeCrvEdge: Edge, cvxEdge: Edge, crvEdge: Edge, ustEdge: Edge, alluoEdge: Edge;
 
     const renbtcAddress = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46";
     const fraxPoolAddress = "0xd632f22692FaC7611d2AA1C0D552930D43CAEd3B";
@@ -35,6 +36,16 @@ describe("Exchange (full setup operations)", async () => {
     const nativeEth = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
     const zeroAddr = "0x0000000000000000000000000000000000000000";
 
+    const alluoPool = "0x85Be1e46283f5f438D1f864c2d925506571d544f";
+
+    async function getImpersonatedSigner(address: string): Promise<SignerWithAddress> {
+        await ethers.provider.send(
+            'hardhat_impersonateAccount',
+            [address]
+        );
+
+        return await ethers.getSigner(address);
+    }
 
     function initializeRoutes() {
         wethUsdtRoute = [
@@ -125,6 +136,7 @@ describe("Exchange (full setup operations)", async () => {
         cvxEdge = { swapProtocol: 4, pool: cvxCurvePool, fromCoin: cvx.address, toCoin: weth.address };
         crvEdge = { swapProtocol: 5, pool: crvCurvePool, fromCoin: crv.address, toCoin: weth.address };
         ustEdge = { swapProtocol: 6, pool: ustCurveAddress, fromCoin: ust.address, toCoin: usdt.address };
+        alluoEdge = { swapProtocol: 7, pool: alluoPool, fromCoin: alluo.address, toCoin: weth.address }
     }
 
     async function executeSetup() {
@@ -180,6 +192,37 @@ describe("Exchange (full setup operations)", async () => {
 
         await (await exchange.registerAdapters([ustAdapter.address], [6])).wait();
         await (await exchange.createMinorCoinEdge([ustEdge])).wait();
+
+        // phase 4 - add of Balancer adapter & ALLUO route
+        const BalancerAdapter = await ethers.getContractFactory("BalancerAdapter");
+        const balancerAdapter = await (await BalancerAdapter.deploy()).deployed();
+        await exchange.createApproval([weth.address, alluo.address],
+            ["0xBA12222222228d8Ba445958a75a0704d566BF2C8",
+                "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
+            ])
+
+        await (await exchange.registerAdapters([balancerAdapter.address], [7])).wait();
+        await (await exchange.createMinorCoinEdge([alluoEdge])).wait();
+
+        await exchange.createLpToken(
+            [{ swapProtocol: 7, pool: alluoPool }],
+            [alluoPool],
+            [[weth.address, alluo.address]]
+        );
+
+        const investor = await getImpersonatedSigner("0xaa7c65cd4b52844412533e2c2c3e36402781d69f");
+        const forcer = await (await ethers.getContractFactory("ForceSender")).deploy({ value: parseEther("5.0") });
+        await forcer.forceSend(investor.address);
+
+        const etherAmount = parseEther("72.9927");
+        await weth.deposit({ value: etherAmount });
+        await weth.approve(exchange.address, etherAmount);
+
+        const alluoAmount = parseUnits("2999910.0", await alluo.decimals());
+        await alluo.connect(investor).approve(exchange.address, alluoAmount);
+
+        await exchange.exchange(weth.address, alluoPool, etherAmount, 0);
+        await exchange.connect(investor).exchange(alluo.address, alluoPool, alluoAmount, 0);
     }
 
     before(async () => {
@@ -199,6 +242,7 @@ describe("Exchange (full setup operations)", async () => {
         ust = await ethers.getContractAt("IERC20Metadata", "0xa47c8bf37f92aBed4A126BDA807A7b7498661acD");
         cvx = await ethers.getContractAt("IERC20Metadata", "0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B");
         crv = await ethers.getContractAt("IERC20Metadata", "0xD533a949740bb3306d119CC777fa900bA034cd52");
+        alluo = await ethers.getContractAt("IERC20Metadata", "0x1E5193ccC53f25638Aa22a940af899B692e10B09");
         frax = await ethers.getContractAt("IERC20Metadata", "0x853d955aCEf822Db058eb8505911ED77F175b99e");
         threeCrvLp = await ethers.getContractAt("IERC20Metadata", "0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490");
         crv3CryptoLp = await ethers.getContractAt("IERC20Metadata", "0xc4AD29ba4B3c580e6D59105FFf484999997675Ff");
@@ -243,7 +287,7 @@ describe("Exchange (full setup operations)", async () => {
 
 
     it("Should check all available swaps", async () => {
-        const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx, weth];
+        const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx, alluo, weth];
         await weth.deposit({ value: parseEther("100.0") });
 
         // get all supported coins - swap ETH for all coins

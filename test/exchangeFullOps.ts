@@ -17,14 +17,14 @@ describe("Exchange (full setup operations)", async () => {
     let exchange: Exchange, weth: IWrappedEther, usdt: IERC20Metadata, usdc: IERC20Metadata,
         dai: IERC20Metadata, cvx: IERC20Metadata, crv: IERC20Metadata, frax: IERC20Metadata,
         threeCrvLp: IERC20Metadata, crv3CryptoLp: IERC20Metadata, ust: IERC20Metadata,
-        alluo: IERC20Metadata;
+        alluo: IERC20Metadata, reth: IERC20Metadata;
 
     let wethUsdtRoute: Route, wethUsdcRoute: Route, wethDaiRoute: Route, usdtWethRoute: Route, usdtUsdcRoute: Route, usdtDaiRoute: Route,
         usdcWethRoute: Route, usdcUsdtRoute: Route, usdcDaiRoute: Route, daiUsdcRoute: Route, daiUsdtRoute: Route, daiWethRoute: Route,
         wethFraxRoute: Route, usdtFraxRoute: Route, daiFraxRoute: Route, usdcFraxRoute: Route, fraxUsdcRoute: Route, fraxDaiRoute: Route,
         fraxUsdtRoute: Route, fraxWethRoute: Route;
 
-    let threeCrvEdge: Edge, cvxEdge: Edge, crvEdge: Edge, ustEdge: Edge, alluoEdge: Edge;
+    let threeCrvEdge: Edge, cvxEdge: Edge, crvEdge: Edge, ustEdge: Edge, alluoEdge: Edge, rethEdge: Edge;
 
     const renbtcAddress = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46";
     const fraxPoolAddress = "0xd632f22692FaC7611d2AA1C0D552930D43CAEd3B";
@@ -37,6 +37,7 @@ describe("Exchange (full setup operations)", async () => {
     const zeroAddr = "0x0000000000000000000000000000000000000000";
 
     const alluoPool = "0x85Be1e46283f5f438D1f864c2d925506571d544f";
+    const rethPool = "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276";
 
     async function getImpersonatedSigner(address: string): Promise<SignerWithAddress> {
         await ethers.provider.send(
@@ -136,7 +137,8 @@ describe("Exchange (full setup operations)", async () => {
         cvxEdge = { swapProtocol: 4, pool: cvxCurvePool, fromCoin: cvx.address, toCoin: weth.address };
         crvEdge = { swapProtocol: 5, pool: crvCurvePool, fromCoin: crv.address, toCoin: weth.address };
         ustEdge = { swapProtocol: 6, pool: ustCurveAddress, fromCoin: ust.address, toCoin: usdt.address };
-        alluoEdge = { swapProtocol: 7, pool: alluoPool, fromCoin: alluo.address, toCoin: weth.address }
+        alluoEdge = { swapProtocol: 7, pool: alluoPool, fromCoin: alluo.address, toCoin: weth.address };
+        rethEdge = { swapProtocol: 7, pool: rethPool, fromCoin: reth.address, toCoin: weth.address };
     }
 
     async function executeSetup() {
@@ -210,6 +212,12 @@ describe("Exchange (full setup operations)", async () => {
             [[weth.address, alluo.address]]
         );
 
+        // phase 5 - using existing adaptor for rETH exchange
+        await (await exchange.createMinorCoinEdge([rethEdge])).wait();
+        await exchange.createApproval([reth.address],
+            ["0xBA12222222228d8Ba445958a75a0704d566BF2C8"]);
+
+        // add more liquidity in ALLUO-ETH pool
         const investor = await getImpersonatedSigner("0xaa7c65cd4b52844412533e2c2c3e36402781d69f");
         const forcer = await (await ethers.getContractFactory("ForceSender")).deploy({ value: parseEther("5.0") });
         await forcer.forceSend(investor.address);
@@ -236,6 +244,7 @@ describe("Exchange (full setup operations)", async () => {
         signers = await ethers.getSigners();
 
         weth = await ethers.getContractAt("IWrappedEther", "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2");
+        reth = await ethers.getContractAt("IERC20Metadata", "0xae78736Cd615f374D3085123A210448E74Fc6393")
         usdt = await ethers.getContractAt("IERC20Metadata", "0xdAC17F958D2ee523a2206206994597C13D831ec7");
         usdc = await ethers.getContractAt("IERC20Metadata", "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
         dai = await ethers.getContractAt("IERC20Metadata", "0x6B175474E89094C44Da98b954EedeAC495271d0F");
@@ -287,7 +296,7 @@ describe("Exchange (full setup operations)", async () => {
 
 
     it("Should check all available swaps", async () => {
-        const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx, alluo, weth];
+        const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx, alluo, weth, reth];
         await weth.deposit({ value: parseEther("100.0") });
 
         // get all supported coins - swap ETH for all coins

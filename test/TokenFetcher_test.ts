@@ -37,6 +37,21 @@ describe("Token Fetcher Tests", async () => {
       expect(majorTokens.length).to.be.equal(2);
     })
 
+    it("Should Change Token Data", async() => {
+      const TokensBefore = await tokenFetcher.getAllMajorCoins();
+      const nameBefore = TokensBefore[1].fromSymbol;
+      console.log("name before change", nameBefore);
+
+      const newData = {fromSymbol: 'SHIB', fromToken: "0xdAC17F958D2ee523a2206206994597C13D831ec7", toSymbols: ['USDC', 'DAI', 'WETH'] };
+      await tokenFetcher.changeMajorCoinData(1, newData);
+
+      const TokensAfter = await tokenFetcher.getAllMajorCoins();
+      const nameAfter = TokensAfter[1].fromSymbol;
+      console.log("name After change", nameAfter);
+
+      expect(nameAfter).to.be.equal("SHIB");
+    })
+
     it("Should Delete One listed Major Token", async() => {
       const deleteToken = await tokenFetcher.deleteMajorCoin(1);
       console.log("Last listed Coins after Deletion : ", deleteToken);

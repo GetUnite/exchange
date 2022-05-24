@@ -76,6 +76,31 @@ contract TokenFetcher is AccessControl {
     return minorCoins;
   }
 
+  /// @notice  Replace Listed Tokens Datas  
+  /// @dev First Function : Major Tokens
+  ///      Second Function : Minor Tokens.
+  /// @param _indexOfToken : Index of Token To Replace 
+  /// @param _newData : New Struct 
+
+  function changeMajorCoinData(uint256 _indexOfToken, MajorRoute memory _newData) 
+  external 
+  onlyRole(DEFAULT_ADMIN_ROLE)
+  returns(MajorRoute[] memory) 
+  {
+    majorCoins[_indexOfToken] = _newData;
+    return majorCoins;
+  }
+
+  function changeMinorCoinData(uint256 _indexOfToken, MinorRoute memory _newData) 
+  external 
+  onlyRole(DEFAULT_ADMIN_ROLE)
+  returns(MinorRoute[] memory) 
+  {
+    minorCoins[_indexOfToken] = _newData;
+    return minorCoins;
+  }
+
+
   /// @notice  Delete Listed Coins by Index.  
   /// @dev First Function : Major Tokens
   ///      Second Function : Minor Tokens.

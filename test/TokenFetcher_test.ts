@@ -25,8 +25,22 @@ describe("Token Fetcher Tests", async () => {
     });
 
     it("Should Add Major Coins", async() => {
-      const usdcToken = {fromSymbol: 'USDC', fromToken: "0xdAC17F958D2ee523a2206206994597C13D831ec7", toSymbols: ['USDT', 'DAI', 'WETH'] };
-      const usdtToken = {fromSymbol: 'USDT', fromToken: "0xdAC17F958D2ee523a2206206994597C13D831ec7", toSymbols: ['USDC', 'DAI', 'WETH'] };
+      const usdcToken = {
+          fromSymbol: 'USDC', 
+          fromToken: "0xdAC17F958D2ee523a2206206994597C13D831ec7", 
+          toTokens: ["0xc2132D05D31c914a87C6611C10748AEb04B58e8F", "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"], 
+          toSymbols: ['USDT', 'DAI'],
+          routesName: ['usdc-dai'],
+          routesId: [1]
+      };
+      const usdtToken = {
+          fromSymbol: 'USDT', 
+          fromToken: "0xdAC17F958D2ee523a2206206994597C13D831ec7", 
+          toTokens: ["0xc2132D05D31c914a87C6611C10748AEb04B58e8F", "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"], 
+          toSymbols: ['USDT', 'DAI'],
+          routesName: ['usdc-dai'],
+          routesId: [1]
+      };
 
       const newMajorCoin = await tokenFetcher.addMajorCoins([usdcToken, usdtToken]);
       console.log('new tokens created : ', newMajorCoin);
@@ -42,7 +56,14 @@ describe("Token Fetcher Tests", async () => {
       const nameBefore = TokensBefore[1].fromSymbol;
       console.log("name before change", nameBefore);
 
-      const newData = {fromSymbol: 'SHIB', fromToken: "0xdAC17F958D2ee523a2206206994597C13D831ec7", toSymbols: ['USDC', 'DAI', 'WETH'] };
+      const newData = {
+          fromSymbol: 'SHIB', 
+          fromToken: "0xdAC17F958D2ee523a2206206994597C13D831ec7", 
+          toTokens: ["0xc2132D05D31c914a87C6611C10748AEb04B58e8F", "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"], 
+          toSymbols: ['USDT', 'DAI'],
+          routesName: ['usdc-dai'],
+          routesId: [1]
+      };
       await tokenFetcher.changeMajorCoinData(1, newData);
 
       const TokensAfter = await tokenFetcher.getAllMajorCoins();

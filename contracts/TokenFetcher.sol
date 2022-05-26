@@ -15,10 +15,10 @@ contract TokenFetcher is AccessControl {
   struct MajorRoute {
     string fromSymbol;
     address fromToken;
-    // address[] toTokens;
+    address[] toTokens;
     string[] toSymbols;
-    // string[] routesName;
-    // uint128[] routesId;
+    string[] routesName;
+    uint128[] routesId;
   }
 
   struct MinorRoute {

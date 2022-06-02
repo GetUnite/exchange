@@ -25,8 +25,8 @@ const config: HardhatUserConfig = {
     hardhat: {
       forking: {
         enabled: process.env.FORKING_ENABLED == "true",
-        url: process.env.MAINNET_FORKING_URL as string,
-        blockNumber: 14659600
+        url: process.env.POLYGON_FORKING_URL as string,
+        // blockNumber: 14659600
       }
     },
     mainnet: {

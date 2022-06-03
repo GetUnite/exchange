@@ -19,8 +19,10 @@ describe("Exchange (full setup operations)", async () => {
         usdt: IERC20Metadata, weth: IWrappedEther, eurtLp: IERC20Metadata,
         alluo: IERC20Metadata, wMatic: IWrappedEther;
 
-    let eurtDaiRoute: Route, eurtUsdcRoute: Route, eurtUsdtRoute: Route, daiEurtRoute: Route, daiUsdcRoute: Route, daiUsdtRoute: Route,
-        usdcEurtRoute: Route, usdcDaiRoute: Route, usdcUsdtRoute: Route, usdtEurtRoute: Route, usdtDaiRoute: Route, usdtUsdcRoute: Route,
+    let eurtwMaticRoute: Route, eurtDaiRoute: Route, eurtUsdcRoute: Route, eurtUsdtRoute: Route,
+        daiwMaticRoute: Route, daiEurtRoute: Route, daiUsdcRoute: Route, daiUsdtRoute: Route,
+        usdcwMaticRoute: Route, usdcEurtRoute: Route, usdcDaiRoute: Route, usdcUsdtRoute: Route,
+        usdtwMaticRoute: Route, usdtEurtRoute: Route, usdtDaiRoute: Route, usdtUsdcRoute: Route,
         wMaticEurtRoute: Route, wMaticDaiRoute: Route, wMaticUsdtRoute: Route, wMaticUsdcRoute: Route;
     // let wethUsdcRoute: Route, wethDaiRoute: Route, usdtWethRoute: Route;
 
@@ -43,6 +45,9 @@ describe("Exchange (full setup operations)", async () => {
     }
 
     function initializeRoutes() {
+        eurtwMaticRoute = [
+            { swapProtocol: 2, pool: eurtPoolAddress, fromCoin: eurt.address, toCoin: wMatic.address }
+        ];
         eurtDaiRoute = [
             { swapProtocol: 2, pool: eurtPoolAddress, fromCoin: eurt.address, toCoin: dai.address }
         ];
@@ -51,6 +56,9 @@ describe("Exchange (full setup operations)", async () => {
         ];
         eurtUsdtRoute = [
             { swapProtocol: 2, pool: eurtPoolAddress, fromCoin: eurt.address, toCoin: usdt.address },
+        ];
+        daiwMaticRoute = [
+            { swapProtocol: 2, pool: eurtPoolAddress, fromCoin: dai.address, toCoin: wMatic.address }
         ];
         daiEurtRoute = [
             // USDT - WETH
@@ -64,6 +72,10 @@ describe("Exchange (full setup operations)", async () => {
             // USDT - WETH
             { swapProtocol: 2, pool: eurtPoolAddress, fromCoin: dai.address, toCoin: usdt.address }
         ];
+        usdcwMaticRoute = [
+            // USDT - WETH
+            { swapProtocol: 2, pool: eurtPoolAddress, fromCoin: usdc.address, toCoin: wMatic.address }
+        ];
         usdcEurtRoute = [
             // USDT - WETH
             { swapProtocol: 2, pool: eurtPoolAddress, fromCoin: usdc.address, toCoin: eurt.address }
@@ -75,6 +87,10 @@ describe("Exchange (full setup operations)", async () => {
         usdcUsdtRoute = [
             // USDT - WETH
             { swapProtocol: 2, pool: eurtPoolAddress, fromCoin: usdc.address, toCoin: usdt.address }
+        ];
+        usdtwMaticRoute = [
+            // USDT - WETH
+            { swapProtocol: 2, pool: eurtPoolAddress, fromCoin: usdt.address, toCoin: wMatic.address }
         ];
         usdtEurtRoute = [
             // USDT - WETH
@@ -120,34 +136,43 @@ describe("Exchange (full setup operations)", async () => {
 
         exchange = await Exchange.deploy(dai.address, true);
         await exchange.deployed();
+        console.log("exchange Address:", exchange.address)
 
         const routes: Route[] = [
-            eurtDaiRoute, eurtUsdcRoute, eurtUsdtRoute, daiEurtRoute, daiUsdcRoute, daiUsdtRoute,
-            usdcEurtRoute, usdcDaiRoute, usdcUsdtRoute, usdtEurtRoute, usdtDaiRoute, usdtUsdcRoute,
-            wMaticEurtRoute, wMaticDaiRoute, wMaticUsdcRoute, wMaticUsdtRoute
+            wMaticEurtRoute, wMaticDaiRoute, wMaticUsdcRoute, wMaticUsdtRoute,
+            eurtwMaticRoute, eurtDaiRoute, eurtUsdcRoute, eurtUsdtRoute, daiwMaticRoute, daiEurtRoute, daiUsdcRoute, daiUsdtRoute,
+            usdcwMaticRoute, usdcEurtRoute, usdcDaiRoute, usdcUsdtRoute, usdtwMaticRoute, usdtEurtRoute, usdtDaiRoute, usdtUsdcRoute,
         ];
 
         await (await exchange.createInternalMajorRoutes(routes)).wait();
+        console.log("InternalMajorRoutes Registered")
 
         const EurtAdapter = await ethers.getContractFactory("CurveEURtAdapter");
         
 
         const eurtAdapter = await (await EurtAdapter.deploy()).deployed();
-        console.log("eurt Addres:", eurtAdapter.address)
+        console.log("eurt Address:", eurtAdapter.address)
 
         await (await exchange.registerAdapters([eurtAdapter.address], [2])).wait();
+        console.log("Adapter Registered")
+
+        const adapterAddress = await exchange.adapters([2]);
+        console.log("Adapter Address :", adapterAddress)
 
         await (await exchange.createLpToken([{ swapProtocol: 2, pool: eurtPoolAddress }],
             [eurtLp.address],
-            [[eurt.address], [dai.address, usdc.address, usdt.address]])).wait();
+            [[eurt.address, dai.address, usdc.address, usdt.address]])).wait();
+            console.log("LPToken Registered")
 
         await exchange.createApproval([eurt.address, dai.address, usdc.address, usdt.address],
             [eurtPoolAddress,
                 eurtPoolAddress,
                 eurtPoolAddress]);
+                console.log("Approval Registered")
 
 
         await (await exchange.createMinorCoinEdge([eurtEdge])).wait();
+        console.log("MinorCoinEdge Registered")
 
 
         // add more liquidity in ALLUO-ETH pool
@@ -156,8 +181,8 @@ describe("Exchange (full setup operations)", async () => {
         await forcer.forceSend(investor.address);
 
         const etherAmount = parseEther("72.9927");
-        await weth.deposit({ value: etherAmount });
-        await weth.approve(exchange.address, etherAmount);
+        await wMatic.deposit({ value: etherAmount });
+        await wMatic.approve(exchange.address, etherAmount);
 
         // const alluoAmount = parseUnits("2999910.0", await alluo.decimals());
         // await alluo.connect(investor).approve(exchange.address, alluoAmount);
@@ -177,7 +202,7 @@ describe("Exchange (full setup operations)", async () => {
         signers = await ethers.getSigners();
 
         wMatic = await ethers.getContractAt("IWrappedEther", "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270");
-        weth = await ethers.getContractAt("IWrappedEther", "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619");
+        // weth = await ethers.getContractAt("IWrappedEther", "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619");
         eurt = await ethers.getContractAt("IERC20Metadata", "0x7BDF330f423Ea880FF95fC41A280fD5eCFD3D09f");
         usdt = await ethers.getContractAt("IERC20Metadata", "0xc2132D05D31c914a87C6611C10748AEb04B58e8F");
         usdc = await ethers.getContractAt("IERC20Metadata", "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174");
@@ -227,7 +252,7 @@ describe("Exchange (full setup operations)", async () => {
 
     it("Should check all available swaps", async () => {
         const supportedCoinList = [dai, usdc, usdt, eurt, wMatic];
-        await weth.deposit({ value: parseEther("100.0") });
+        await wMatic.deposit({ value: parseEther("100.0") });
 
         // get all supported coins - swap ETH for all coins
         for (let i = 0; i < supportedCoinList.length; i++) {
@@ -252,7 +277,7 @@ describe("Exchange (full setup operations)", async () => {
         // swap rest of all coins to eth
         for (let i = 0; i < supportedCoinList.length; i++) {
             const coin = supportedCoinList[i];
-            if (coin.address == weth.address) continue;
+            if (coin.address == wMatic.address) continue;
             const amount = await coin.balanceOf(signers[0].address);
             await testSwap(coin.address, nativeEth, amount);
         }
@@ -261,7 +286,7 @@ describe("Exchange (full setup operations)", async () => {
 
 // Is Swap protocol & Protocol ID same ? 
 // nested array at Create LP Token 
-// Replace Native / Wrapper Eth w Matic 
+// Replace Native / Wrapper Eth w Matic (Routes - PoolAddress)
 
 
 // Adapter - Add liquidity, entry coin [4] - 1 ? 

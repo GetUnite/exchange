@@ -23,7 +23,7 @@ interface ICurveEURt {
         uint256 token_amount,
         uint256 i,
         uint256 min_amount
-    ) external returns (uint256);
+    ) external;
 }
 
 contract CurveEURtAdapter {
@@ -82,8 +82,8 @@ contract CurveEURtAdapter {
         uint256 i = indexByCoin(toToken);
         require(i != 0, "EURtAdapter: can't exit");
 
-        return curve.remove_liquidity_one_coin(amount, i - 1, 0);
+        curve.remove_liquidity_one_coin(amount, i - 1, 0);
 
-        // return IERC20(toToken).balanceOf(address(this));
+        return IERC20(toToken).balanceOf(address(this));
     }
 }

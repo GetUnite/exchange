@@ -143,8 +143,8 @@ describe("Exchange EURT Adapter (full setup operations)", async () => {
 
         await exchange.connect(admin).createLpToken(
             [{ swapProtocol: 1, pool: PolygonCurveEURtPool }],
-            [PolygonCurveEURtPool],
-            [[eurt.address, dai.address, usdc.address, usdt.address, EURtCurveLp.address]]
+            [EURtCurveLp.address],
+            [[eurt.address, dai.address, usdc.address, usdt.address]]
         );
 
         await exchange.connect(admin).createApproval([eurt.address, dai.address, usdc.address, usdt.address],
@@ -163,9 +163,9 @@ describe("Exchange EURT Adapter (full setup operations)", async () => {
         const from = await ethers.getContractAt("IERC20Metadata", fromAddress);
         await from.connect(usdWhale).approve(exchange.address, amount);
         // Usd whale doesn't have EURtLp, so change slightly,
-        if (fromAddress == EURtCurveLp.address) {
+        if (fromAddress == "0x600743B1d8A96438bD46836fD34977a00293f6Aa") {
             usdc.connect(usdWhale).approve(exchange.address, parseUnits("100", 6));
-            const tx = await exchange.connect(usdWhale).exchange(usdc.address, EURtCurveLp.address, parseUnits("100", 6), 0)
+            const tx = await exchange.connect(usdWhale).exchange(usdc.address, "0x600743B1d8A96438bD46836fD34977a00293f6Aa", parseUnits("100", 6), 0)
             // Give some EURtLp to the usdWhale to exit pool.
         }
         if (fromAddress == eurt.address) {

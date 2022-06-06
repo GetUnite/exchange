@@ -114,7 +114,7 @@ describe("Exchange (full setup operations)", async () => {
 
         await exchange.connect(admin).createLpToken(
             [{ swapProtocol: 1, pool: PolygonCurve3Pool }],
-            [PolygonCurve3Pool],
+            [PolygonCurve3Lp.address],
             [[dai.address, usdt.address, usdc.address, PolygonCurve3Lp.address]]
         );
 

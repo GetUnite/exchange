@@ -8,22 +8,25 @@ import "./../interfaces/IExchangeAdapter.sol";
 // solhint-disable func-name-mixedcase
 // solhint-disable var-name-mixedcase
 interface ICurve3Crv {
-    function add_liquidity(uint256[3] memory amounts, uint256 min_mint_amount, bool _use_underlying)
-        external;
+    function add_liquidity(
+        uint256[3] memory amounts,
+        uint256 min_mint_amount,
+        bool _use_underlying
+    ) external returns (uint256);
 
     function remove_liquidity_one_coin(
         uint256 _token_amount,
         int128 i,
         uint256 min_amount,
         bool _use_underlying
-    ) external;
+    ) external returns (uint256);
 
-    function exchange_underlying (
-            int128 i,
-            int128 j,
-            uint256 dx,
-            uint256 min_dy
-        ) external returns (uint256);
+    function exchange_underlying(
+        int128 i,
+        int128 j,
+        uint256 dx,
+        uint256 min_dy
+    ) external returns (uint256);
 }
 
 contract PolygonCurve3Adapter is IExchangeAdapter {
@@ -45,48 +48,37 @@ contract PolygonCurve3Adapter is IExchangeAdapter {
         uint256 amount
     ) external payable returns (uint256) {
         ICurve3Crv pool3crv = ICurve3Crv(pool);
-
-        if (toToken == address(token3crv)) {
-            // enter 3crv pool to get 3crv token
-            int128 i = indexByCoin(fromToken);
-            require(i != 0, "PolygonCurve3Adapter: can't swap");
-            uint256[3] memory amounts;
-            amounts[uint256(int256(i - 1))] = amount;
-
-            pool3crv.add_liquidity(amounts, 0, true);
-
-            return token3crv.balanceOf(address(this));
-        } else if (fromToken == address(token3crv)) {
-            // exit 3crv pool to get stable
-            int128 i = indexByCoin(toToken);
-            require(i != 0, "PolygonCurve3Adapter: can't swap");
-
-            pool3crv.remove_liquidity_one_coin(amount, i - 1, 0, true);
-
-            return IERC20(toToken).balanceOf(address(this));
-        } else {
-            // Swap between two USD stable coins
-            int128 i = indexByCoin(fromToken);
-            int128 j = indexByCoin(toToken);
-            require(i != 0 && j != 0, "PolygonCurve3Adapter: can't swap");
-            pool3crv.exchange_underlying(i - 1, j - 1, amount, 0);
-            return IERC20(toToken).balanceOf(address(this));
-        }
+        // Swap between two USD stable coins
+        int128 i = indexByCoin(fromToken);
+        int128 j = indexByCoin(toToken);
+        require(i != 0 && j != 0, "PolygonCurve3Adapter: can't swap");
+        pool3crv.exchange_underlying(i - 1, j - 1, amount, 0);
+        return IERC20(toToken).balanceOf(address(this));
     }
 
     function enterPool(
-        address,
-        address,
-        uint256
+        address pool,
+        address fromToken,
+        uint256 amount
     ) external payable returns (uint256) {
-        revert("PolygonCurve3Adapter: cant enter");
+        ICurve3Crv pool3crv = ICurve3Crv(pool);
+        // enter 3crv pool to get 3crv token
+        int128 i = indexByCoin(fromToken);
+        require(i != 0, "PolygonCurve3Adapter: can't swap");
+        uint256[3] memory amounts;
+        amounts[uint256(int256(i - 1))] = amount;
+        return pool3crv.add_liquidity(amounts, 0, true);
     }
 
     function exitPool(
-        address,
-        address,
-        uint256
+        address pool,
+        address toToken,
+        uint256 amount
     ) external payable returns (uint256) {
-        revert("PolygonCurve3Adapter: can't exit");
+        // exit 3crv pool to get stable
+        ICurve3Crv pool3crv = ICurve3Crv(pool);
+        int128 i = indexByCoin(toToken);
+        require(i != 0, "PolygonCurve3Adapter: can't swap");
+        return pool3crv.remove_liquidity_one_coin(amount, i - 1, 0, true);
     }
 }

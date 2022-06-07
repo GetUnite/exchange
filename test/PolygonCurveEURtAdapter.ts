@@ -1,8 +1,8 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumberish } from "ethers";
-import { formatEther, formatUnits, parseEther, parseUnits } from "ethers/lib/utils";
+import { formatUnits, parseUnits } from "ethers/lib/utils";
 import { ethers, network } from "hardhat";
-import { Exchange, IERC20, IERC20Metadata, IWrappedEther } from "../typechain";
+import { Exchange, IERC20Metadata } from "../typechain";
 
 describe("Exchange EURT Adapter (full setup operations)", async () => {
     type Edge = {
@@ -17,7 +17,7 @@ describe("Exchange EURT Adapter (full setup operations)", async () => {
     let signers: SignerWithAddress[];
     let exchange: Exchange;
     let usdt: IERC20Metadata, usdc: IERC20Metadata, dai: IERC20Metadata,
-        eurt: IERC20Metadata, EURtCurveLp: IERC20Metadata, am3crv: IERC20Metadata;
+        eurt: IERC20Metadata, EURtCurveLp: IERC20Metadata;
 
     let usdtEurtRoute: Route, usdtDaiRoute: Route, usdtUsdcRoute: Route,
         usdcEurtRoute: Route, usdcDaiRoute: Route, usdcUsdtRoute: Route,
@@ -36,7 +36,6 @@ describe("Exchange EURT Adapter (full setup operations)", async () => {
             'hardhat_impersonateAccount',
             [address]
         );
-
         return await ethers.getSigner(address);
     }
 
@@ -67,10 +66,8 @@ describe("Exchange EURT Adapter (full setup operations)", async () => {
         dai = await ethers.getContractAt("IERC20Metadata", "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063");
         eurt = await ethers.getContractAt("IERC20Metadata", "0x7BDF330f423Ea880FF95fC41A280fD5eCFD3D09f");
         EURtCurveLp = await ethers.getContractAt("IERC20Metadata", "0x600743B1d8A96438bD46836fD34977a00293f6Aa")
-        am3crv = await ethers.getContractAt("IERC20Metadata", "0xE7a24EF0C5e95Ffb0f6684b813A78F2a3AD7D171")
 
         polygonCurveEdge = { swapProtocol: 1, pool: PolygonCurveEURtPool, fromCoin: EURtCurveLp.address, toCoin: usdc.address };
-
 
         usdtEurtRoute = [
             // USDT - EURT
@@ -155,8 +152,6 @@ describe("Exchange EURT Adapter (full setup operations)", async () => {
         await exchange.connect(admin).registerAdapters([polygonCurveAdapter.address], [1])
 
         await exchange.connect(admin).createMinorCoinEdge([polygonCurveEdge])
-
-
     });
 
     async function testSwap(fromAddress: string, toAddress: string, amount: BigNumberish) {
@@ -198,5 +193,5 @@ describe("Exchange EURT Adapter (full setup operations)", async () => {
         }
 
     })
-}) 
+})
 

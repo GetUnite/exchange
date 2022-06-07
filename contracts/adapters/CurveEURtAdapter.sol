@@ -16,8 +16,10 @@ interface ICurveEURt {
         uint256 min_dy
     ) external returns (uint256);
 
-    function add_liquidity(uint256[4] memory amounts, uint256 min_mint_amount)
-        external;
+    function add_liquidity(
+        uint256[4] memory amounts, 
+        uint256 min_mint_amount
+    ) external;
 
     function remove_liquidity_one_coin(
         uint256 token_amount,
@@ -30,7 +32,10 @@ contract CurveEURtAdapter {
     IERC20 public constant lpToken =
         IERC20(0x600743B1d8A96438bD46836fD34977a00293f6Aa); //Curve EURT-3Crv (crvEURTUSD)
 
-    function indexByCoin(address coin) public pure returns (uint256) {
+    function indexByCoin(
+        address coin
+    ) public pure returns (uint256) {
+        // We are using the underlying coins for swaps.
         if (coin == 0x7BDF330f423Ea880FF95fC41A280fD5eCFD3D09f) return 1; // EURt polygon
         if (coin == 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063) return 2; // dai polygon
         if (coin == 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174) return 3; // usdc polygon
@@ -46,10 +51,10 @@ contract CurveEURtAdapter {
         uint256 amount
     ) external payable returns (uint256) {
         ICurveEURt curve = ICurveEURt(pool);
+        // Swap between two USD stable coins
         uint256 i = indexByCoin(fromToken);
         uint256 j = indexByCoin(toToken);
         require(i != 0 && j != 0, "EURtAdapter: can't swap");
-
         return curve.exchange_underlying(i - 1, j - 1, amount, 0);
     }
 
@@ -60,14 +65,12 @@ contract CurveEURtAdapter {
         uint256 amount
     ) external payable returns (uint256) {
         ICurveEURt curve = ICurveEURt(pool);
+        // enter EURt pool to get crvEURTUSD token
         uint256[4] memory amounts;
         uint256 i = indexByCoin(fromToken);
         require(i != 0, "EURtAdapter: can't enter");
-
         amounts[i - 1] = amount;
-
         curve.add_liquidity(amounts, 0);
-
         return lpToken.balanceOf(address(this));
     }
 
@@ -78,12 +81,10 @@ contract CurveEURtAdapter {
         uint256 amount
     ) external payable returns (uint256) {
         ICurveEURt curve = ICurveEURt(pool);
-
+        // exit EURt pool to get stable
         uint256 i = indexByCoin(toToken);
         require(i != 0, "EURtAdapter: can't exit");
-
         curve.remove_liquidity_one_coin(amount, i - 1, 0);
-
         return IERC20(toToken).balanceOf(address(this));
     }
 }

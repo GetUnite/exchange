@@ -22,11 +22,10 @@ describe("Exchange (full setup operations)", async () => {
     let wethUsdtRoute: Route, wethUsdcRoute: Route, wethDaiRoute: Route, usdtWethRoute: Route, usdtUsdcRoute: Route, usdtDaiRoute: Route,
         usdcWethRoute: Route, usdcUsdtRoute: Route, usdcDaiRoute: Route, daiUsdcRoute: Route, daiUsdtRoute: Route, daiWethRoute: Route,
         wethFraxRoute: Route, usdtFraxRoute: Route, daiFraxRoute: Route, usdcFraxRoute: Route, fraxUsdcRoute: Route, fraxDaiRoute: Route,
-        fraxUsdtRoute: Route, fraxWethRoute: Route , ldoWethRoute: Route,  spellWethRoute: Route, angleWethRoute : Route, wethLdoRoute: Route,  wethSpellRoute: Route, wethAngleRoute : Route;
+        fraxUsdtRoute: Route, fraxWethRoute: Route;
 
     let threeCrvEdge: Edge, cvxEdge: Edge, crvEdge: Edge, ustEdge: Edge, alluoEdge: Edge, rethEdge: Edge, angleEdge :Edge, ldoEdge : Edge, spellEdge: Edge;
 
-    let spellWhale : SignerWithAddress, ldoWhale : SignerWithAddress, angleWhale: SignerWithAddress
     const renbtcAddress = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46";
     const fraxPoolAddress = "0xd632f22692FaC7611d2AA1C0D552930D43CAEd3B";
     const threeCrvPool = "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7";
@@ -59,25 +58,6 @@ describe("Exchange (full setup operations)", async () => {
     }
 
     function initializeRoutes() {
-        ldoWethRoute = [
-            { swapProtocol: 10, pool: ldoWethPair, fromCoin: ldo.address, toCoin: weth.address }
-        ];
-        angleWethRoute = [
-            { swapProtocol: 10, pool: angleWethPair, fromCoin: angle.address, toCoin: weth.address}
-        ];
-        spellWethRoute = [
-            { swapProtocol: 10, pool: spellWethPair, fromCoin: spell.address, toCoin: weth.address }
-        ];
-        wethLdoRoute = [
-            { swapProtocol: 10, pool: ldoWethPair, fromCoin: weth.address, toCoin: ldo.address }
-        ];
-        wethAngleRoute = [
-            { swapProtocol: 10, pool: angleWethPair, fromCoin: weth.address, toCoin: angle.address}
-        ];
-        wethSpellRoute = [
-            { swapProtocol: 10, pool: spellWethPair, fromCoin: weth.address, toCoin: spell.address }
-        ];
-
         wethUsdtRoute = [
             { swapProtocol: 2, pool: renbtcAddress, fromCoin: weth.address, toCoin: usdt.address }
         ];
@@ -181,15 +161,11 @@ describe("Exchange (full setup operations)", async () => {
         exchange = await Exchange.deploy(dai.address, true);
         await exchange.deployed();
 
-        spellWhale = await getImpersonatedSigner(spellWhaleAddress);
-        ldoWhale = await getImpersonatedSigner(ldoWhaleAddress);
-        angleWhale = await getImpersonatedSigner(angleWhaleAddress);
-
         const routes: Route[] = [
             wethUsdtRoute, wethUsdcRoute, wethDaiRoute, usdtWethRoute, usdtUsdcRoute, usdtDaiRoute,
             usdcWethRoute, usdcUsdtRoute, usdcDaiRoute, daiUsdcRoute, daiUsdtRoute, daiWethRoute,
             wethFraxRoute, usdtFraxRoute, daiFraxRoute, usdcFraxRoute, fraxUsdcRoute, fraxDaiRoute,
-            fraxUsdtRoute, fraxWethRoute, //wethAngleRoute, wethSpellRoute, wethLdoRoute, angleWethRoute, spellWethRoute, ldoWethRoute
+            fraxUsdtRoute, fraxWethRoute,
         ];
 
         await (await exchange.createInternalMajorRoutes(routes)).wait();

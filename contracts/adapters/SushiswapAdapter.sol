@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.14;
+pragma solidity ^0.8.11;
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/IExchange.sol";
+import "hardhat/console.sol";
 
 interface IUniswapV2Pair {
     event Approval(
@@ -139,7 +140,7 @@ interface IExchangeAdapter {
 
 contract SushiswapAdapter is IExchangeAdapter {
     using SafeERC20 for IERC20;
-    address constant exchange = address(0);
+    address constant exchange = 0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7;
 
     function executeSwap(
         address pool,
@@ -158,11 +159,10 @@ contract SushiswapAdapter is IExchangeAdapter {
         (uint256 amount0Out, uint256 amount1Out) = fromToken == token0
             ? (uint256(0), amountOut)
             : (amountOut, uint256(0));
-
         IUniswapV2Pair(pool).swap(
             amount0Out,
             amount1Out,
-            msg.sender,
+            address(this),
             new bytes(0)
         );
         return toToken == token0 ? amount0Out : amount1Out;
@@ -173,8 +173,7 @@ contract SushiswapAdapter is IExchangeAdapter {
         address fromToken,
         uint256 amount
     ) external payable returns (uint256) {
-        IERC20(fromToken).transfer(pool, amount);
-        return IUniswapV2Pair(pool).mint(msg.sender);
+        revert("SushiswapAdapter: cant enter");
     }
 
     // Amount = amount of lptokens to burn!
@@ -183,23 +182,8 @@ contract SushiswapAdapter is IExchangeAdapter {
         address toToken,
         uint256 amount
     ) external payable returns (uint256) {
-        IUniswapV2Pair(pool).transfer(pool, amount);
-        (uint256 amount0, uint256 amount1) = IUniswapV2Pair(pool).burn(
-            msg.sender
-        );
-        address token0 = IUniswapV2Pair(pool).token0();
-        address token1 = IUniswapV2Pair(pool).token1();
-        // Uniswap returns in 'equal' value amounts.
-        // We need to exchange these tokens again to the toToken using the exchange
-        if (token1 == toToken) {
-            return
-                IExchange(exchange).exchange(token0, toToken, amount0, 0) +
-                amount1;
-        } else {
-            return
-                IExchange(exchange).exchange(token1, toToken, amount1, 0) +
-                amount0;
-        }
+        revert("SushiswapAdapter: cant enter");
+
     }
 
     // given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset
@@ -218,4 +202,6 @@ contract SushiswapAdapter is IExchangeAdapter {
         uint256 denominator = reserveIn * 1000 + amountInWithFee;
         amountOut = numerator / denominator;
     }
+
+
 }

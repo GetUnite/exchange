@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 
 import "./interfaces/IWrappedEther.sol";
 import "./interfaces/IExchangeAdapter.sol";
-
+import "hardhat/console.sol";
 contract Exchange is ReentrancyGuard, AccessControl {
     using SafeERC20 for IERC20;
     using Address for address;
@@ -81,7 +81,6 @@ contract Exchange is ReentrancyGuard, AccessControl {
         uint256 minAmountOut
     ) external payable nonReentrant returns (uint256) {
         require(from != to, "Exchange: from == to");
-
         if (lpTokens[to].swapProtocol != 0) {
             IERC20(from).safeTransferFrom(msg.sender, address(this), amountIn);
 
@@ -145,7 +144,6 @@ contract Exchange is ReentrancyGuard, AccessControl {
         uint256 amountOut_ = _exchange(from, to, amountIn);
 
         require(amountOut_ >= minAmountOut, "Exchange: slippage");
-
         IERC20(to).safeTransfer(msg.sender, amountOut_);
 
         return amountOut_;

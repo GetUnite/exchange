@@ -2,7 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumberish } from "ethers";
 import { formatEther, formatUnits, parseEther, parseUnits } from "ethers/lib/utils";
 import { ethers } from "hardhat";
-import { Exchange, IERC20Metadata, IWrappedEther } from "../typechain";
+import { Exchange, IERC20Metadata, IWrappedEther, SushiswapAdapter, SushiswapAdapter__factory } from "../typechain";
 
 describe("Exchange (full setup operations)", async () => {
     type Edge = {
@@ -17,15 +17,16 @@ describe("Exchange (full setup operations)", async () => {
     let exchange: Exchange, weth: IWrappedEther, usdt: IERC20Metadata, usdc: IERC20Metadata,
         dai: IERC20Metadata, cvx: IERC20Metadata, crv: IERC20Metadata, frax: IERC20Metadata,
         threeCrvLp: IERC20Metadata, crv3CryptoLp: IERC20Metadata, ust: IERC20Metadata,
-        alluo: IERC20Metadata, reth: IERC20Metadata;
+        alluo: IERC20Metadata, reth: IERC20Metadata, ldo : IERC20Metadata, spell : IERC20Metadata, angle : IERC20Metadata;
 
     let wethUsdtRoute: Route, wethUsdcRoute: Route, wethDaiRoute: Route, usdtWethRoute: Route, usdtUsdcRoute: Route, usdtDaiRoute: Route,
         usdcWethRoute: Route, usdcUsdtRoute: Route, usdcDaiRoute: Route, daiUsdcRoute: Route, daiUsdtRoute: Route, daiWethRoute: Route,
         wethFraxRoute: Route, usdtFraxRoute: Route, daiFraxRoute: Route, usdcFraxRoute: Route, fraxUsdcRoute: Route, fraxDaiRoute: Route,
-        fraxUsdtRoute: Route, fraxWethRoute: Route;
+        fraxUsdtRoute: Route, fraxWethRoute: Route , ldoWethRoute: Route,  spellWethRoute: Route, angleWethRoute : Route, wethLdoRoute: Route,  wethSpellRoute: Route, wethAngleRoute : Route;
 
-    let threeCrvEdge: Edge, cvxEdge: Edge, crvEdge: Edge, ustEdge: Edge, alluoEdge: Edge, rethEdge: Edge;
+    let threeCrvEdge: Edge, cvxEdge: Edge, crvEdge: Edge, ustEdge: Edge, alluoEdge: Edge, rethEdge: Edge, angleEdge :Edge, ldoEdge : Edge, spellEdge: Edge;
 
+    let spellWhale : SignerWithAddress, ldoWhale : SignerWithAddress, angleWhale: SignerWithAddress
     const renbtcAddress = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46";
     const fraxPoolAddress = "0xd632f22692FaC7611d2AA1C0D552930D43CAEd3B";
     const threeCrvPool = "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7";
@@ -39,6 +40,15 @@ describe("Exchange (full setup operations)", async () => {
     const alluoPool = "0x85Be1e46283f5f438D1f864c2d925506571d544f";
     const rethPool = "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276";
 
+
+    const ldoWethPair = "0xC558F600B34A5f69dD2f0D06Cb8A88d829B7420a"
+    const spellWethPair = "0xb5De0C3753b6E1B4dBA616Db82767F17513E6d4E"
+    const angleWethPair = "0xFb55AF0ef0DcdeC92Bd3752E7a9237dfEfB8AcC0"
+
+    const spellWhaleAddress = "0x2ee555c9006a9dc4674f01e0d4dfc58e013708f0";
+    const ldoWhaleAddress = "0x0f89d54b02ca570de82f770d33c7b7cf7b3c3394";
+    const angleWhaleAddress = "0x2fc443960971e53fd6223806f0114d5faa8c7c4e";
+
     async function getImpersonatedSigner(address: string): Promise<SignerWithAddress> {
         await ethers.provider.send(
             'hardhat_impersonateAccount',
@@ -49,6 +59,25 @@ describe("Exchange (full setup operations)", async () => {
     }
 
     function initializeRoutes() {
+        ldoWethRoute = [
+            { swapProtocol: 10, pool: ldoWethPair, fromCoin: ldo.address, toCoin: weth.address }
+        ];
+        angleWethRoute = [
+            { swapProtocol: 10, pool: angleWethPair, fromCoin: angle.address, toCoin: weth.address}
+        ];
+        spellWethRoute = [
+            { swapProtocol: 10, pool: spellWethPair, fromCoin: spell.address, toCoin: weth.address }
+        ];
+        wethLdoRoute = [
+            { swapProtocol: 10, pool: ldoWethPair, fromCoin: weth.address, toCoin: ldo.address }
+        ];
+        wethAngleRoute = [
+            { swapProtocol: 10, pool: angleWethPair, fromCoin: weth.address, toCoin: angle.address}
+        ];
+        wethSpellRoute = [
+            { swapProtocol: 10, pool: spellWethPair, fromCoin: weth.address, toCoin: spell.address }
+        ];
+
         wethUsdtRoute = [
             { swapProtocol: 2, pool: renbtcAddress, fromCoin: weth.address, toCoin: usdt.address }
         ];
@@ -139,6 +168,11 @@ describe("Exchange (full setup operations)", async () => {
         ustEdge = { swapProtocol: 6, pool: ustCurveAddress, fromCoin: ust.address, toCoin: usdt.address };
         alluoEdge = { swapProtocol: 7, pool: alluoPool, fromCoin: alluo.address, toCoin: weth.address };
         rethEdge = { swapProtocol: 7, pool: rethPool, fromCoin: reth.address, toCoin: weth.address };
+
+        spellEdge = { swapProtocol: 10, pool: spellWethPair, fromCoin: spell.address, toCoin: weth.address };
+        ldoEdge = { swapProtocol: 10, pool: ldoWethPair, fromCoin: ldo.address, toCoin: weth.address };
+        angleEdge = { swapProtocol: 10, pool: angleWethPair, fromCoin: angle.address, toCoin: weth.address };
+
     }
 
     async function executeSetup() {
@@ -147,11 +181,15 @@ describe("Exchange (full setup operations)", async () => {
         exchange = await Exchange.deploy(dai.address, true);
         await exchange.deployed();
 
+        spellWhale = await getImpersonatedSigner(spellWhaleAddress);
+        ldoWhale = await getImpersonatedSigner(ldoWhaleAddress);
+        angleWhale = await getImpersonatedSigner(angleWhaleAddress);
+
         const routes: Route[] = [
             wethUsdtRoute, wethUsdcRoute, wethDaiRoute, usdtWethRoute, usdtUsdcRoute, usdtDaiRoute,
             usdcWethRoute, usdcUsdtRoute, usdcDaiRoute, daiUsdcRoute, daiUsdtRoute, daiWethRoute,
             wethFraxRoute, usdtFraxRoute, daiFraxRoute, usdcFraxRoute, fraxUsdcRoute, fraxDaiRoute,
-            fraxUsdtRoute, fraxWethRoute
+            fraxUsdtRoute, fraxWethRoute, //wethAngleRoute, wethSpellRoute, wethLdoRoute, angleWethRoute, spellWethRoute, ldoWethRoute
         ];
 
         await (await exchange.createInternalMajorRoutes(routes)).wait();
@@ -161,7 +199,9 @@ describe("Exchange (full setup operations)", async () => {
         const ThreeCrvSwap = await ethers.getContractFactory("Curve3CrvSwapAdapter");
         const CvxAdapter = await ethers.getContractFactory("CurveCvxAdapter");
         const CrvAdapter = await ethers.getContractFactory("CurveCrvAdapter");
-
+        const SushiSwapAdapter : SushiswapAdapter__factory = await ethers.getContractFactory("SushiswapAdapter")
+        
+        const sushiAdapter : SushiswapAdapter = await (await SushiSwapAdapter.deploy()).deployed();
         const threeCrypto = await (await ThreeCrypto.deploy()).deployed();
         const fraxAdapter = await (await Frax.deploy()).deployed();
         const threeCrvAdapter = await (await ThreeCrvSwap.deploy()).deployed();
@@ -174,18 +214,24 @@ describe("Exchange (full setup operations)", async () => {
             [fraxPoolAddress, crv3CryptoLp.address],
             [[threeCrvLp.address, frax.address, fraxPoolAddress], [usdt.address, weth.address]])).wait();
 
-        await exchange.createApproval([dai.address, usdc.address, usdt.address],
+        // Weth approval is given later so no need there.
+        await exchange.createApproval([dai.address, usdc.address, usdt.address, spell.address, ldo.address, angle.address],
             ["0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",
                 "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",
-                "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7"]);
+                "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7", "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",  "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",  "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7"]);
 
         await (await exchange.registerAdapters([threeCrvAdapter.address], [3])).wait();
         await (await exchange.registerAdapters([cvxAdapter.address], [4])).wait();
         await (await exchange.registerAdapters([crvAdapter.address], [5])).wait();
+        
+        await (await exchange.registerAdapters([sushiAdapter.address], [10])).wait();
 
         await (await exchange.createMinorCoinEdge([threeCrvEdge])).wait();
         await (await exchange.createMinorCoinEdge([cvxEdge])).wait();
         await (await exchange.createMinorCoinEdge([crvEdge])).wait();
+        await (await exchange.createMinorCoinEdge([spellEdge])).wait();
+        await (await exchange.createMinorCoinEdge([angleEdge])).wait();
+        await (await exchange.createMinorCoinEdge([ldoEdge])).wait();
 
         // phase 3 - add of UST coin
 
@@ -234,12 +280,12 @@ describe("Exchange (full setup operations)", async () => {
     }
 
     before(async () => {
-        const investorAddress = process.env.IMPERSONATE_ADDRESS as string;
+        // const investorAddress = process.env.IMPERSONATE_ADDRESS as string;
 
-        await ethers.provider.send(
-            'hardhat_impersonateAccount',
-            [investorAddress]
-        );
+        // await ethers.provider.send(
+        //     'hardhat_impersonateAccount',
+        //     [investorAddress]
+        // );
 
         signers = await ethers.getSigners();
 
@@ -256,6 +302,10 @@ describe("Exchange (full setup operations)", async () => {
         threeCrvLp = await ethers.getContractAt("IERC20Metadata", "0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490");
         crv3CryptoLp = await ethers.getContractAt("IERC20Metadata", "0xc4AD29ba4B3c580e6D59105FFf484999997675Ff");
 
+
+        ldo = await ethers.getContractAt("IERC20Metadata", "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32");
+        angle = await ethers.getContractAt("IERC20Metadata", "0x31429d1856aD1377A8A0079410B297e1a9e214c2");
+        spell = await ethers.getContractAt("IERC20Metadata", "0x090185f2135308BaD17527004364eBcC2D37e5F6");
         initializeRoutes();
     });
 
@@ -296,7 +346,8 @@ describe("Exchange (full setup operations)", async () => {
 
 
     it("Should check all available swaps", async () => {
-        const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx, alluo, weth, reth];
+        const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx, alluo, reth, weth, ldo, spell, angle];
+
         await weth.deposit({ value: parseEther("100.0") });
 
         // get all supported coins - swap ETH for all coins
@@ -314,7 +365,7 @@ describe("Exchange (full setup operations)", async () => {
 
                 const coinIn = supportedCoinList[i];
                 const coinOut = supportedCoinList[j];
-                const oneToken = parseUnits("1.0", await coinIn.decimals());
+                const oneToken = parseUnits("0.1", await coinIn.decimals());
                 await testSwap(coinIn.address, coinOut.address, oneToken);
             }
         }
@@ -327,4 +378,5 @@ describe("Exchange (full setup operations)", async () => {
             await testSwap(coin.address, nativeEth, amount);
         }
     });
+
 });

@@ -17,9 +17,6 @@ type Edge = {
 let spellEdge: Edge, ldoEdge: Edge, angleEdge: Edge;
 let usdc: IERC20, ldo: IERC20, angle: IERC20, spell:IERC20, weth: IWrappedEther;
 
-
-
-
 async function main() {
   const exchange = await ethers.getContractAt("Exchange", "0x29c66CF57a03d41Cfe6d9ecB6883aa0E2AbA21Ec");
 
@@ -28,7 +25,7 @@ async function main() {
   console.log("Deploying SushiswapAdapter adapter...");
   const sushiswapAdapter = await (await SushiswapAdapter.deploy()).deployed();
   console.log("Sushiswap adapter deployed at", sushiswapAdapter.address);
-  console.log("\n\nCalldata for adapters registration:", exchange.interface.encodeFunctionData("registerAdapters", [[sushiswapAdapter.address], [1]]))
+  console.log("\n\nCalldata for adapters registration:", exchange.interface.encodeFunctionData("registerAdapters", [[sushiswapAdapter.address], [8]]))
 
   //add Minor coin edge to Exchange
   const ldoWethPair = "0xC558F600B34A5f69dD2f0D06Cb8A88d829B7420a"
@@ -39,11 +36,11 @@ async function main() {
   ldo = await ethers.getContractAt("IERC20Metadata", "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32");
   angle = await ethers.getContractAt("IERC20Metadata", "0x31429d1856aD1377A8A0079410B297e1a9e214c2");
   spell = await ethers.getContractAt("IERC20Metadata", "0x090185f2135308BaD17527004364eBcC2D37e5F6");
-  usdc = await ethers.getContractAt("IERC20", "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174");
+  usdc = await ethers.getContractAt("IERC20", "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
 
-  spellEdge = { swapProtocol: 10, pool: spellWethPair, fromCoin: spell.address, toCoin: weth.address };
-  ldoEdge = { swapProtocol: 10, pool: ldoWethPair, fromCoin: ldo.address, toCoin: weth.address };
-  angleEdge = { swapProtocol: 10, pool: angleWethPair, fromCoin: angle.address, toCoin: weth.address };
+  spellEdge = { swapProtocol: 8, pool: spellWethPair, fromCoin: spell.address, toCoin: weth.address };
+  ldoEdge = { swapProtocol: 8, pool: ldoWethPair, fromCoin: ldo.address, toCoin: weth.address };
+  angleEdge = { swapProtocol: 8, pool: angleWethPair, fromCoin: angle.address, toCoin: weth.address };
 
   console.log("\n\nCalldata for edges creation:", exchange.interface.encodeFunctionData("createMinorCoinEdge", [[spellEdge, ldoEdge, angleEdge]]))
 }

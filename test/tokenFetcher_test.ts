@@ -13,17 +13,17 @@ describe("Token Fetcher Tests", async () => {
 
 
   before(async () => {
-    const investorAddress = process.env.IMPERSONATE_ADDRESS as string;
+    const gnosisAddress = "0x1F020A4943EB57cd3b2213A66b355CB662Ea43C3"
 
     await ethers.provider.send(
       'hardhat_impersonateAccount',
-      [investorAddress]
+      [gnosisAddress]
     );
 
-    investor = await ethers.getSigner(investorAddress);
+    investor = await ethers.getSigner(gnosisAddress);
 
     const TokenFetcher = await ethers.getContractFactory("TokenFetcher");
-    tokenFetcher = await TokenFetcher.deploy(investorAddress, true);
+    tokenFetcher = await TokenFetcher.deploy(gnosisAddress, true);
   });
 
   it("Should Add Major Coins", async () => {

@@ -31,7 +31,7 @@ const config: HardhatUserConfig = {
     },
     mainnet: {
       url: process.env.MAINNET_URL,
-      gasPrice: 40000000000,
+      gasPrice: 'auto',
       accounts: {
         mnemonic: process.env.MNEMONIC,
       },

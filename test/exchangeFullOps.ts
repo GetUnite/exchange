@@ -1,8 +1,8 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumberish } from "ethers";
 import { formatEther, formatUnits, parseEther, parseUnits } from "ethers/lib/utils";
-import { ethers } from "hardhat";
-import { Exchange, IERC20Metadata, IWrappedEther } from "../typechain";
+import { ethers, network } from "hardhat";
+import { Exchange, IERC20, IERC20Metadata, IWrappedEther } from "../typechain";
 
 describe("Exchange (full setup operations)", async () => {
     type Edge = {
@@ -17,14 +17,14 @@ describe("Exchange (full setup operations)", async () => {
     let exchange: Exchange, weth: IWrappedEther, usdt: IERC20Metadata, usdc: IERC20Metadata,
         dai: IERC20Metadata, cvx: IERC20Metadata, crv: IERC20Metadata, frax: IERC20Metadata,
         threeCrvLp: IERC20Metadata, crv3CryptoLp: IERC20Metadata, ust: IERC20Metadata,
-        alluo: IERC20Metadata, reth: IERC20Metadata;
+        alluo: IERC20Metadata, reth: IERC20Metadata, fraxUsdc: IERC20Metadata, stEthEth: IERC20Metadata;
 
     let wethUsdtRoute: Route, wethUsdcRoute: Route, wethDaiRoute: Route, usdtWethRoute: Route, usdtUsdcRoute: Route, usdtDaiRoute: Route,
         usdcWethRoute: Route, usdcUsdtRoute: Route, usdcDaiRoute: Route, daiUsdcRoute: Route, daiUsdtRoute: Route, daiWethRoute: Route,
         wethFraxRoute: Route, usdtFraxRoute: Route, daiFraxRoute: Route, usdcFraxRoute: Route, fraxUsdcRoute: Route, fraxDaiRoute: Route,
         fraxUsdtRoute: Route, fraxWethRoute: Route;
 
-    let threeCrvEdge: Edge, cvxEdge: Edge, crvEdge: Edge, ustEdge: Edge, alluoEdge: Edge, rethEdge: Edge;
+    let threeCrvEdge: Edge, cvxEdge: Edge, crvEdge: Edge, ustEdge: Edge, alluoEdge: Edge, rethEdge: Edge, fraxUsdcEdge: Edge, stEthEdge: Edge;
 
     const renbtcAddress = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46";
     const fraxPoolAddress = "0xd632f22692FaC7611d2AA1C0D552930D43CAEd3B";
@@ -38,6 +38,8 @@ describe("Exchange (full setup operations)", async () => {
 
     const alluoPool = "0x85Be1e46283f5f438D1f864c2d925506571d544f";
     const rethPool = "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276";
+    const fraxUSDCPool = "0xDcEF968d416a41Cdac0ED8702fAC8128A64241A2"
+    const stEthEthPool = "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"
 
     async function getImpersonatedSigner(address: string): Promise<SignerWithAddress> {
         await ethers.provider.send(
@@ -139,6 +141,8 @@ describe("Exchange (full setup operations)", async () => {
         ustEdge = { swapProtocol: 6, pool: ustCurveAddress, fromCoin: ust.address, toCoin: usdt.address };
         alluoEdge = { swapProtocol: 7, pool: alluoPool, fromCoin: alluo.address, toCoin: weth.address };
         rethEdge = { swapProtocol: 7, pool: rethPool, fromCoin: reth.address, toCoin: weth.address };
+        fraxUsdcEdge = { swapProtocol: 10, pool: fraxUSDCPool, fromCoin: fraxUsdc.address, toCoin: usdc.address };
+        stEthEdge = { swapProtocol: 11, pool: stEthEthPool, fromCoin: stEthEth.address, toCoin: weth.address};
     }
 
     async function executeSetup() {
@@ -161,12 +165,17 @@ describe("Exchange (full setup operations)", async () => {
         const ThreeCrvSwap = await ethers.getContractFactory("Curve3CrvSwapAdapter");
         const CvxAdapter = await ethers.getContractFactory("CurveCvxAdapter");
         const CrvAdapter = await ethers.getContractFactory("CurveCrvAdapter");
+        const FraxUsdcAdapter = await ethers.getContractFactory("CurveFraxUsdcAdapter");
+        const StEthAdapter = await ethers.getContractFactory("CurveStEthAdapter");
 
         const threeCrypto = await (await ThreeCrypto.deploy()).deployed();
         const fraxAdapter = await (await Frax.deploy()).deployed();
         const threeCrvAdapter = await (await ThreeCrvSwap.deploy()).deployed();
         const cvxAdapter = await (await CvxAdapter.deploy()).deployed();
         const crvAdapter = await (await CrvAdapter.deploy()).deployed();
+        const fraxUsdcAdapter = await (await FraxUsdcAdapter.deploy()).deployed()
+        const stEthAdapter = await (await StEthAdapter.deploy()).deployed()
+
 
         await (await exchange.registerAdapters([fraxAdapter.address, threeCrypto.address], [1, 2])).wait();
 
@@ -182,10 +191,15 @@ describe("Exchange (full setup operations)", async () => {
         await (await exchange.registerAdapters([threeCrvAdapter.address], [3])).wait();
         await (await exchange.registerAdapters([cvxAdapter.address], [4])).wait();
         await (await exchange.registerAdapters([crvAdapter.address], [5])).wait();
+        await (await exchange.registerAdapters([fraxUsdcAdapter.address], [10])).wait();
+        await (await exchange.registerAdapters([stEthAdapter.address], [11])).wait();
+
 
         await (await exchange.createMinorCoinEdge([threeCrvEdge])).wait();
         await (await exchange.createMinorCoinEdge([cvxEdge])).wait();
         await (await exchange.createMinorCoinEdge([crvEdge])).wait();
+        await (await exchange.createMinorCoinEdge([fraxUsdcEdge])).wait();
+        await (await exchange.createMinorCoinEdge([stEthEdge])).wait();
 
         // phase 3 - add of UST coin
 
@@ -234,6 +248,18 @@ describe("Exchange (full setup operations)", async () => {
     }
 
     before(async () => {
+          //We are forking Polygon mainnet, please set Alchemy key in .env
+          await network.provider.request({
+            method: "hardhat_reset",
+            params: [{
+                forking: {
+                    enabled: true,
+                    jsonRpcUrl: process.env.MAINNET_FORKING_URL as string,
+                    //you can fork from last block by commenting next line
+                    blockNumber: 15426472,
+                },
+            },],
+        });    
         const investorAddress = process.env.IMPERSONATE_ADDRESS as string;
 
         await ethers.provider.send(
@@ -255,7 +281,8 @@ describe("Exchange (full setup operations)", async () => {
         frax = await ethers.getContractAt("IERC20Metadata", "0x853d955aCEf822Db058eb8505911ED77F175b99e");
         threeCrvLp = await ethers.getContractAt("IERC20Metadata", "0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490");
         crv3CryptoLp = await ethers.getContractAt("IERC20Metadata", "0xc4AD29ba4B3c580e6D59105FFf484999997675Ff");
-
+        fraxUsdc = await ethers.getContractAt("IERC20Metadata", "0x3175Df0976dFA876431C2E9eE6Bc45b65d3473CC")
+        stEthEth = await ethers.getContractAt("IERC20Metadata", "0x06325440D014e39736583c165C2963BA99fAf14E")
         initializeRoutes();
     });
 
@@ -296,14 +323,14 @@ describe("Exchange (full setup operations)", async () => {
 
 
     it("Should check all available swaps", async () => {
-        const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx, alluo, weth, reth];
-        await weth.deposit({ value: parseEther("100.0") });
+        const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx, alluo, weth, reth,stEthEth, fraxUsdc];
+        await weth.deposit({ value: parseEther("1000.0") });
 
         // get all supported coins - swap ETH for all coins
         for (let i = 0; i < supportedCoinList.length; i++) {
             const coin = supportedCoinList[i];
             if (coin.address == weth.address) continue;
-            const ethToCoinAmount = parseEther("10.0");
+            const ethToCoinAmount = parseEther("20.0");
             await testSwap(nativeEth, coin.address, ethToCoinAmount);
         }
 

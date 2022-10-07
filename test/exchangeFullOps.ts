@@ -18,7 +18,7 @@ describe("Exchange (full setup operations)", async () => {
         dai: IERC20Metadata, cvx: IERC20Metadata, crv: IERC20Metadata, frax: IERC20Metadata,
         threeCrvLp: IERC20Metadata, crv3CryptoLp: IERC20Metadata, ust: IERC20Metadata,
         alluo: IERC20Metadata, reth: IERC20Metadata, ldo: IERC20Metadata, spell: IERC20Metadata, angle: IERC20Metadata,
-        eurs: IERC20Metadata, ageur: IERC20Metadata, eurt: IERC20Metadata, fraxUsdc: IERC20Metadata, stEthEth: IERC20Metadata;;
+        eurs: IERC20Metadata, ageur: IERC20Metadata, eurt: IERC20Metadata, fraxUsdc: IERC20Metadata, stEthEth: IERC20Metadata, cvxEth : IERC20Metadata;
 
     let wethUsdtRoute: Route, wethUsdcRoute: Route, wethDaiRoute: Route, usdtWethRoute: Route, usdtUsdcRoute: Route, usdtDaiRoute: Route,
         usdcWethRoute: Route, usdcUsdtRoute: Route, usdcDaiRoute: Route, daiUsdcRoute: Route, daiUsdtRoute: Route, daiWethRoute: Route,
@@ -26,7 +26,7 @@ describe("Exchange (full setup operations)", async () => {
         fraxUsdtRoute: Route, fraxWethRoute: Route;
 
     let threeCrvEdge: Edge, cvxEdge: Edge, crvEdge: Edge, ustEdge: Edge, alluoEdge: Edge, rethEdge: Edge, angleEdge: Edge, ldoEdge: Edge, spellEdge: Edge,
-        eursUsdcEdge: Edge, ageurUsdcEdge: Edge, eurtUsdcEdge: Edge, fraxUsdcEdge: Edge, stEthEdge: Edge;;
+        eursUsdcEdge: Edge, ageurUsdcEdge: Edge, eurtUsdcEdge: Edge, fraxUsdcEdge: Edge, stEthEdge: Edge, cvxEthEdge: Edge;
 
     const renbtcAddress = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46";
     const fraxPoolAddress = "0xd632f22692FaC7611d2AA1C0D552930D43CAEd3B";
@@ -49,7 +49,7 @@ describe("Exchange (full setup operations)", async () => {
 
     const fraxUSDCPool = "0xDcEF968d416a41Cdac0ED8702fAC8128A64241A2"
     const stEthEthPool = "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"
-
+    const cvxEthPool = "0xB576491F1E6e5E62f1d8F26062Ee822B40B0E0d4"
     async function getImpersonatedSigner(address: string): Promise<SignerWithAddress> {
         await ethers.provider.send(
             'hardhat_impersonateAccount',
@@ -161,6 +161,7 @@ describe("Exchange (full setup operations)", async () => {
 
         fraxUsdcEdge = { swapProtocol: 13, pool: fraxUSDCPool, fromCoin: fraxUsdc.address, toCoin: usdc.address };
         stEthEdge = { swapProtocol: 14, pool: stEthEthPool, fromCoin: stEthEth.address, toCoin: weth.address};
+        cvxEthEdge = { swapProtocol: 15, pool: cvxEthPool, fromCoin: cvxEth.address, toCoin: weth.address}
     }
 
     async function executeSetup() {
@@ -186,6 +187,7 @@ describe("Exchange (full setup operations)", async () => {
         const FraxUsdcAdapter = await ethers.getContractFactory("CurveFraxUsdcAdapter");
         const StEthAdapter = await ethers.getContractFactory("CurveStEthAdapter");
         const SushiSwapAdapter: SushiswapAdapter__factory = await ethers.getContractFactory("SushiswapAdapter")
+        const CvxEthAdapter = await ethers.getContractFactory("CurveCvxEthAdapter");
 
         const sushiAdapter: SushiswapAdapter = await (await SushiSwapAdapter.deploy()).deployed();
         const threeCrypto = await (await ThreeCrypto.deploy()).deployed();
@@ -195,7 +197,7 @@ describe("Exchange (full setup operations)", async () => {
         const crvAdapter = await (await CrvAdapter.deploy()).deployed();
         const fraxUsdcAdapter = await (await FraxUsdcAdapter.deploy()).deployed()
         const stEthAdapter = await (await StEthAdapter.deploy()).deployed()
-
+        const cvxEthAdapter = await (await CvxEthAdapter.deploy()).deployed();
 
         await (await exchange.registerAdapters([fraxAdapter.address, threeCrypto.address], [1, 2])).wait();
 
@@ -214,6 +216,7 @@ describe("Exchange (full setup operations)", async () => {
         await (await exchange.registerAdapters([crvAdapter.address], [5])).wait();
         await (await exchange.registerAdapters([fraxUsdcAdapter.address], [13])).wait();
         await (await exchange.registerAdapters([stEthAdapter.address], [14])).wait();
+        await (await exchange.registerAdapters([cvxEthAdapter.address], [15])).wait();
 
 
         await (await exchange.registerAdapters([sushiAdapter.address], [10])).wait();
@@ -226,6 +229,7 @@ describe("Exchange (full setup operations)", async () => {
         await (await exchange.createMinorCoinEdge([spellEdge])).wait();
         await (await exchange.createMinorCoinEdge([angleEdge])).wait();
         await (await exchange.createMinorCoinEdge([ldoEdge])).wait();
+        await (await exchange.createMinorCoinEdge([cvxEthEdge])).wait();
 
         // phase 3 - add of UST coin
 
@@ -329,6 +333,7 @@ describe("Exchange (full setup operations)", async () => {
         ldo = await ethers.getContractAt("IERC20Metadata", "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32");
         angle = await ethers.getContractAt("IERC20Metadata", "0x31429d1856aD1377A8A0079410B297e1a9e214c2");
         spell = await ethers.getContractAt("IERC20Metadata", "0x090185f2135308BaD17527004364eBcC2D37e5F6");
+        cvxEth = await ethers.getContractAt("IERC20Metadata","0x3A283D9c08E8b55966afb64C515f5143cf907611" )
         initializeRoutes();
     });
 
@@ -369,7 +374,7 @@ describe("Exchange (full setup operations)", async () => {
 
 
     it("Should check all available swaps", async () => {
-        const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx, alluo, weth, reth, ldo, spell, angle, eurs, ageur, eurt, stEthEth, fraxUsdc];
+        const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx, alluo, weth, reth, ldo, spell, angle, eurs, ageur, eurt, stEthEth, fraxUsdc, cvxEth];
         await weth.deposit({ value: parseEther("1000.0") });
 
         // get all supported coins - swap ETH for all coins

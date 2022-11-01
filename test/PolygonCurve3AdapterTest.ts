@@ -4,7 +4,7 @@ import { formatEther, formatUnits, parseEther, parseUnits } from "ethers/lib/uti
 import { ethers, network } from "hardhat";
 import { Exchange, IERC20, IERC20Metadata, IWrappedEther } from "../typechain";
 
-describe("Exchange (full setup operations)", async () => {
+describe("Curve 3 Exchange (full setup operations)", async () => {
     type Edge = {
         swapProtocol: BigNumberish;
         pool: string;

@@ -5,7 +5,7 @@ import { formatUnits, parseUnits } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 import { Curve3CryptoAdapter, CurveFraxAdapter, Exchange, IERC20 } from "../typechain";
 
-describe("Curve Frax pool extra tests", async () => {
+describe("Curve 3Crypto pool extra tests", async () => {
     let investor: SignerWithAddress;
     let adapter: Curve3CryptoAdapter;
 

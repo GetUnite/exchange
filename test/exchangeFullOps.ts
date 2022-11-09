@@ -248,13 +248,13 @@ describe("Exchange (full setup operations)", async () => {
             ])
 
         await (await exchange.registerAdapters([balancerAdapter.address], [7])).wait();
-        await (await exchange.createMinorCoinEdge([alluoEdge])).wait();
+        // await (await exchange.createMinorCoinEdge([alluoEdge])).wait();
 
-        await exchange.createLpToken(
-            [{ swapProtocol: 7, pool: alluoPool }],
-            [alluoPool],
-            [[weth.address, alluo.address]]
-        );
+        // await exchange.createLpToken(
+        //     [{ swapProtocol: 7, pool: alluoPool }],
+        //     [alluoPool],
+        //     [[weth.address, alluo.address]]
+        // );
 
         // phase 5 - using existing adaptor for rETH exchange
         await (await exchange.createMinorCoinEdge([rethEdge])).wait();
@@ -273,8 +273,8 @@ describe("Exchange (full setup operations)", async () => {
         const alluoAmount = parseUnits("2999910.0", await alluo.decimals());
         await alluo.connect(investor).approve(exchange.address, alluoAmount);
 
-        await exchange.exchange(weth.address, alluoPool, etherAmount, 0);
-        await exchange.connect(investor).exchange(alluo.address, alluoPool, alluoAmount, 0);
+        // await exchange.exchange(weth.address, alluoPool, etherAmount, 0);
+        // await exchange.connect(investor).exchange(alluo.address, alluoPool, alluoAmount, 0);
 
         // phase 6: add EURO coins
         const EursUsdcAdapter = await ethers.getContractFactory("CurveEURSUSDAdapter");
@@ -288,6 +288,10 @@ describe("Exchange (full setup operations)", async () => {
         )
         await exchange.registerAdapters([eursUsdcAdapter.address, eurAdapter.address], [11, 12])
         await exchange.createMinorCoinEdge([eursUsdcEdge, ageurUsdcEdge, eurtUsdcEdge]);
+
+        //
+        // TO-DO: Set up ALLUO exchange on UniswapV3 pool (0x4E44c9abC0b7c61E5F9e165271581d823Abf684d)
+        //
     }
 
     before(async () => {

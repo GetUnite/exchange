@@ -289,9 +289,20 @@ describe("Exchange (full setup operations)", async () => {
         await exchange.registerAdapters([eursUsdcAdapter.address, eurAdapter.address], [11, 12])
         await exchange.createMinorCoinEdge([eursUsdcEdge, ageurUsdcEdge, eurtUsdcEdge]);
 
-        //
-        // TO-DO: Set up ALLUO exchange on UniswapV3 pool (0x4E44c9abC0b7c61E5F9e165271581d823Abf684d)
-        //
+        const UniswapV3Adapter = await ethers.getContractFactory("UniswapV3Adapter");
+        const uniAdapter = await UniswapV3Adapter.deploy();
+        const swapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
+
+        await exchange.registerAdapters([uniAdapter.address], [16]);
+
+        await exchange.createApproval([alluo.address, weth.address], [swapRouter, swapRouter]);
+
+        await exchange.createMinorCoinEdge([{
+            swapProtocol: 16,
+            pool: "0x0000000000000000000000000000000000000bb8",
+            fromCoin: alluo.address,
+            toCoin: weth.address
+        }]);
     }
 
     before(async () => {
@@ -303,7 +314,7 @@ describe("Exchange (full setup operations)", async () => {
                     enabled: true,
                     jsonRpcUrl: process.env.MAINNET_FORKING_URL as string,
                     //you can fork from last block by commenting next line
-                    blockNumber: 15426472,
+                    blockNumber: 15931417,
                 },
             },],
         });    

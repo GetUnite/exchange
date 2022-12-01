@@ -248,13 +248,13 @@ describe("Exchange (full setup operations)", async () => {
             ])
 
         await (await exchange.registerAdapters([balancerAdapter.address], [7])).wait();
-        await (await exchange.createMinorCoinEdge([alluoEdge])).wait();
+        // await (await exchange.createMinorCoinEdge([alluoEdge])).wait();
 
-        await exchange.createLpToken(
-            [{ swapProtocol: 7, pool: alluoPool }],
-            [alluoPool],
-            [[weth.address, alluo.address]]
-        );
+        // await exchange.createLpToken(
+        //     [{ swapProtocol: 7, pool: alluoPool }],
+        //     [alluoPool],
+        //     [[weth.address, alluo.address]]
+        // );
 
         // phase 5 - using existing adaptor for rETH exchange
         await (await exchange.createMinorCoinEdge([rethEdge])).wait();
@@ -273,8 +273,8 @@ describe("Exchange (full setup operations)", async () => {
         const alluoAmount = parseUnits("2999910.0", await alluo.decimals());
         await alluo.connect(investor).approve(exchange.address, alluoAmount);
 
-        await exchange.exchange(weth.address, alluoPool, etherAmount, 0);
-        await exchange.connect(investor).exchange(alluo.address, alluoPool, alluoAmount, 0);
+        // await exchange.exchange(weth.address, alluoPool, etherAmount, 0);
+        // await exchange.connect(investor).exchange(alluo.address, alluoPool, alluoAmount, 0);
 
         // phase 6: add EURO coins
         const EursUsdcAdapter = await ethers.getContractFactory("CurveEURSUSDAdapter");
@@ -288,6 +288,21 @@ describe("Exchange (full setup operations)", async () => {
         )
         await exchange.registerAdapters([eursUsdcAdapter.address, eurAdapter.address], [11, 12])
         await exchange.createMinorCoinEdge([eursUsdcEdge, ageurUsdcEdge, eurtUsdcEdge]);
+
+        const UniswapV3Adapter = await ethers.getContractFactory("UniswapV3Adapter");
+        const uniAdapter = await UniswapV3Adapter.deploy();
+        const swapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
+
+        await exchange.registerAdapters([uniAdapter.address], [16]);
+
+        await exchange.createApproval([alluo.address, weth.address], [swapRouter, swapRouter]);
+
+        await exchange.createMinorCoinEdge([{
+            swapProtocol: 16,
+            pool: "0x0000000000000000000000000000000000000bb8",
+            fromCoin: alluo.address,
+            toCoin: weth.address
+        }]);
     }
 
     before(async () => {
@@ -299,7 +314,7 @@ describe("Exchange (full setup operations)", async () => {
                     enabled: true,
                     jsonRpcUrl: process.env.MAINNET_FORKING_URL as string,
                     //you can fork from last block by commenting next line
-                    blockNumber: 15426472,
+                    blockNumber: 15931417,
                 },
             },],
         });    

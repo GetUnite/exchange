@@ -10,7 +10,7 @@ describe("Curve 3Crypto pool extra tests", async () => {
     let adapter: Curve3CryptoAdapter;
 
     before(async () => {
-        const investorAddress = process.env.IMPERSONATE_ADDRESS as string;
+        const investorAddress = "0xf977814e90da44bfa03b6295a0616a897441acec"
 
         await ethers.provider.send(
             'hardhat_impersonateAccount',

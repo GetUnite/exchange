@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.11;
+pragma solidity ^0.8.11;
 
 import "./../interfaces/IExchangeAdapter.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
@@ -15,8 +15,10 @@ interface ICurve3Crypto {
         bool use_eth
     ) external;
 
-    function add_liquidity(uint256[3] memory amounts, uint256 min_mint_amount)
-        external;
+    function add_liquidity(
+        uint256[3] memory amounts,
+        uint256 min_mint_amount
+    ) external;
 
     function remove_liquidity_one_coin(
         uint256 token_amount,
@@ -26,7 +28,7 @@ interface ICurve3Crypto {
 }
 
 contract Curve3CryptoAdapter is IExchangeAdapter {
-    IERC20 public constant lpToken =
+    IERC20 public constant LP_TOKEN =
         IERC20(0xc4AD29ba4B3c580e6D59105FFf484999997675Ff);
 
     function indexByCoin(address coin) public pure returns (uint256) {
@@ -66,7 +68,7 @@ contract Curve3CryptoAdapter is IExchangeAdapter {
 
         curve.add_liquidity(amounts, 0);
 
-        return lpToken.balanceOf(address(this));
+        return LP_TOKEN.balanceOf(address(this));
     }
 
     function exitPool(

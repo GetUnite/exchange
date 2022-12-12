@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.11;
+pragma solidity ^0.8.11;
 
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 
@@ -30,7 +30,7 @@ interface ICurve3Crv {
 }
 
 contract PolygonCurve3Adapter is IExchangeAdapter {
-    IERC20 public constant token3crv =
+    IERC20 public constant TOKEN_3CRV =
         IERC20(0xE7a24EF0C5e95Ffb0f6684b813A78F2a3AD7D171);
 
     function indexByCoin(address coin) public pure returns (int128) {

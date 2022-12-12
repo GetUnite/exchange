@@ -16,11 +16,14 @@ interface ISwapRouter {
         uint160 sqrtPriceLimitX96;
     }
 
-    function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut);
+    function exactInputSingle(
+        ExactInputSingleParams calldata params
+    ) external payable returns (uint256 amountOut);
 }
 
 contract UniswapV3Adapter is IExchangeAdapter {
-    ISwapRouter public constant router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+    ISwapRouter public constant ROUTER =
+        ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
     // 0x6012856e  =>  executeSwap(address,address,address,uint256)
     function executeSwap(
@@ -29,8 +32,8 @@ contract UniswapV3Adapter is IExchangeAdapter {
         address toToken,
         uint256 amount
     ) external payable returns (uint256) {
-        ISwapRouter.ExactInputSingleParams memory params =
-            ISwapRouter.ExactInputSingleParams({
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
+            .ExactInputSingleParams({
                 tokenIn: fromToken,
                 tokenOut: toToken,
                 fee: uint24(uint160(pool)),
@@ -42,7 +45,7 @@ contract UniswapV3Adapter is IExchangeAdapter {
             });
 
         // The call to `exactInputSingle` executes the swap.
-        return router.exactInputSingle(params);
+        return ROUTER.exactInputSingle(params);
     }
 
     // 0x73ec962e  =>  enterPool(address,address,uint256)

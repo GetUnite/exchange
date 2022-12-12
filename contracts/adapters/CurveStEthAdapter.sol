@@ -15,9 +15,10 @@ interface ICurveStEth {
         uint256 min_dy
     ) external payable returns (uint256);
 
-    function add_liquidity(uint256[2] memory _amounts, uint256 _min_mint_amount) payable
-        external
-        returns (uint256);
+    function add_liquidity(
+        uint256[2] memory _amounts,
+        uint256 _min_mint_amount
+    ) external payable returns (uint256);
 
     function remove_liquidity_one_coin(
         uint256 _burn_amount,
@@ -27,8 +28,9 @@ interface ICurveStEth {
 }
 
 contract CurveStEthAdapter is IExchangeAdapter {
-    address public constant StEthEthLp = 0x06325440D014e39736583c165C2963BA99fAf14E;
-    ICurveStEth public constant StEthPool =
+    address public constant STETH_ETH_LP =
+        0x06325440D014e39736583c165C2963BA99fAf14E;
+    ICurveStEth public constant STETH_POOL =
         ICurveStEth(0xDC24316b9AE028F1497c275EB9192a3Ea0f67022);
 
     function indexByCoin(address coin) public pure returns (int128) {
@@ -45,21 +47,21 @@ contract CurveStEthAdapter is IExchangeAdapter {
         uint256 amount
     ) external payable returns (uint256) {
         ICurveStEth curve = ICurveStEth(pool);
-        if (toToken == StEthEthLp) {
+        if (toToken == STETH_ETH_LP) {
             uint128 i = uint128(indexByCoin(fromToken));
             require(i != 0, "CurveStEthAdapter: Can't Swap");
-            if (i==1) {
+            if (i == 1) {
                 IWrappedEther(fromToken).withdraw(amount);
             }
             uint256[2] memory entryVector;
             entryVector[i - 1] = amount;
-            return curve.add_liquidity{value:amount}(entryVector, 0);
-        } else if (fromToken == StEthEthLp) {
+            return curve.add_liquidity{value: amount}(entryVector, 0);
+        } else if (fromToken == STETH_ETH_LP) {
             int128 i = indexByCoin(toToken);
             require(i != 0, "CurveStEthAdapter: Can't Swap");
-            uint256 amount = curve.remove_liquidity_one_coin(amount, i-1, 0);
-            if (i ==1) {
-                IWrappedEther(toToken).deposit{value:amount}();
+            uint256 amount = curve.remove_liquidity_one_coin(amount, i - 1, 0);
+            if (i == 1) {
+                IWrappedEther(toToken).deposit{value: amount}();
             }
             return amount;
         } else {

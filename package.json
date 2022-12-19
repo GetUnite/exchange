@@ -37,12 +37,14 @@
     "solidity-coverage": "^0.7.17",
     "ts-node": "^10.4.0",
     "typechain": "^5.2.0",
-    "typescript": "^4.5.4"
+    "typescript": "^4.5.4",
+    "solidity-code-metrics": "^0.0.22",
   },
   "scripts": {
     "solhint": "solhint -f table contracts/**/*.sol",
     "prettier:solidity": "prettier --write contracts/**/*.sol",
     "alluo-ready": "solhint -f table contracts/**/*.sol && prettier --write contracts/**/*.sol && hardhat test",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "solidity-metrics": "npx hardhat run scripts/audit/metrics.js"
   }
 }

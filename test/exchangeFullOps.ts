@@ -19,7 +19,7 @@ describe("Exchange (full setup operations)", async () => {
         threeCrvLp: IERC20Metadata, crv3CryptoLp: IERC20Metadata, ust: IERC20Metadata,
         alluo: IERC20Metadata, reth: IERC20Metadata, ldo: IERC20Metadata, spell: IERC20Metadata, angle: IERC20Metadata,
         eurs: IERC20Metadata, ageur: IERC20Metadata, eurt: IERC20Metadata, fraxUsdc: IERC20Metadata, stEthEth: IERC20Metadata,
-        yCRV: IERC20Metadata, cvxEth: IERC20Metadata;
+        cvxEth: IERC20Metadata;
 
     let wethUsdtRoute: Route, wethUsdcRoute: Route, wethDaiRoute: Route, usdtWethRoute: Route, usdtUsdcRoute: Route, usdtDaiRoute: Route,
         usdcWethRoute: Route, usdcUsdtRoute: Route, usdcDaiRoute: Route, daiUsdcRoute: Route, daiUsdtRoute: Route, daiWethRoute: Route,
@@ -350,7 +350,6 @@ describe("Exchange (full setup operations)", async () => {
         angle = await ethers.getContractAt("IERC20Metadata", "0x31429d1856aD1377A8A0079410B297e1a9e214c2");
         spell = await ethers.getContractAt("IERC20Metadata", "0x090185f2135308BaD17527004364eBcC2D37e5F6");
         cvxEth = await ethers.getContractAt("IERC20Metadata", "0x3A283D9c08E8b55966afb64C515f5143cf907611")
-        yCRV = await ethers.getContractAt("IERC20Metadata", "0xfcc5c47be19d06bf83eb04298b026f81069ff65b");
         initializeRoutes();
     });
 
@@ -391,7 +390,7 @@ describe("Exchange (full setup operations)", async () => {
 
 
     it("Should check all available swaps", async () => {
-        const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx, alluo, weth, reth, ldo, spell, angle, eurs, ageur, eurt, stEthEth, fraxUsdc, cvxEth, yCRV];
+        const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx, alluo, weth, reth, ldo, spell, angle, eurs, ageur, eurt, stEthEth, fraxUsdc, cvxEth];
         await weth.deposit({ value: parseEther("1000.0") });
 
         // get all supported coins - swap ETH for all coins

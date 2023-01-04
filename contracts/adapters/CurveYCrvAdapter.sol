@@ -58,7 +58,10 @@ contract CurveYCrvAdapter is IExchangeAdapter {
                 0,
                 0
             );
-
+            IERC20(yCRV).approve(
+                address(0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511),
+                crvAmountToWithdraw
+            );
             return
                 CRVethCurve.exchange(1, 0, amount, crvAmountToWithdraw, false);
         } else {

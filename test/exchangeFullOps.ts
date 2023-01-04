@@ -18,7 +18,8 @@ describe("Exchange (full setup operations)", async () => {
         dai: IERC20Metadata, cvx: IERC20Metadata, crv: IERC20Metadata, frax: IERC20Metadata,
         threeCrvLp: IERC20Metadata, crv3CryptoLp: IERC20Metadata, ust: IERC20Metadata,
         alluo: IERC20Metadata, reth: IERC20Metadata, ldo: IERC20Metadata, spell: IERC20Metadata, angle: IERC20Metadata,
-        eurs: IERC20Metadata, ageur: IERC20Metadata, eurt: IERC20Metadata, fraxUsdc: IERC20Metadata, stEthEth: IERC20Metadata, cvxEth : IERC20Metadata;
+        eurs: IERC20Metadata, ageur: IERC20Metadata, eurt: IERC20Metadata, fraxUsdc: IERC20Metadata, stEthEth: IERC20Metadata,
+        yCRV: IERC20Metadata, cvxEth: IERC20Metadata;
 
     let wethUsdtRoute: Route, wethUsdcRoute: Route, wethDaiRoute: Route, usdtWethRoute: Route, usdtUsdcRoute: Route, usdtDaiRoute: Route,
         usdcWethRoute: Route, usdcUsdtRoute: Route, usdcDaiRoute: Route, daiUsdcRoute: Route, daiUsdtRoute: Route, daiWethRoute: Route,
@@ -150,7 +151,7 @@ describe("Exchange (full setup operations)", async () => {
         ustEdge = { swapProtocol: 6, pool: ustCurveAddress, fromCoin: ust.address, toCoin: usdt.address };
         alluoEdge = { swapProtocol: 7, pool: alluoPool, fromCoin: alluo.address, toCoin: weth.address };
         rethEdge = { swapProtocol: 7, pool: rethPool, fromCoin: reth.address, toCoin: weth.address };
-    
+
         spellEdge = { swapProtocol: 10, pool: spellWethPair, fromCoin: spell.address, toCoin: weth.address };
         ldoEdge = { swapProtocol: 10, pool: ldoWethPair, fromCoin: ldo.address, toCoin: weth.address };
         angleEdge = { swapProtocol: 10, pool: angleWethPair, fromCoin: angle.address, toCoin: weth.address };
@@ -160,8 +161,8 @@ describe("Exchange (full setup operations)", async () => {
         eurtUsdcEdge = { swapProtocol: 12, pool: eurPool, fromCoin: eurt.address, toCoin: usdc.address };
 
         fraxUsdcEdge = { swapProtocol: 13, pool: fraxUSDCPool, fromCoin: fraxUsdc.address, toCoin: usdc.address };
-        stEthEdge = { swapProtocol: 14, pool: stEthEthPool, fromCoin: stEthEth.address, toCoin: weth.address};
-        cvxEthEdge = { swapProtocol: 15, pool: cvxEthPool, fromCoin: cvxEth.address, toCoin: weth.address}
+        stEthEdge = { swapProtocol: 14, pool: stEthEthPool, fromCoin: stEthEth.address, toCoin: weth.address };
+        cvxEthEdge = { swapProtocol: 15, pool: cvxEthPool, fromCoin: cvxEth.address, toCoin: weth.address }
     }
 
     async function executeSetup() {
@@ -306,8 +307,8 @@ describe("Exchange (full setup operations)", async () => {
     }
 
     before(async () => {
-          //We are forking Polygon mainnet, please set Alchemy key in .env
-          await network.provider.request({
+        //We are forking Polygon mainnet, please set Alchemy key in .env
+        await network.provider.request({
             method: "hardhat_reset",
             params: [{
                 forking: {
@@ -317,7 +318,7 @@ describe("Exchange (full setup operations)", async () => {
                     blockNumber: 15931417,
                 },
             },],
-        });    
+        });
         const investorAddress = process.env.IMPERSONATE_ADDRESS as string;
 
         // await ethers.provider.send(
@@ -348,7 +349,8 @@ describe("Exchange (full setup operations)", async () => {
         ldo = await ethers.getContractAt("IERC20Metadata", "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32");
         angle = await ethers.getContractAt("IERC20Metadata", "0x31429d1856aD1377A8A0079410B297e1a9e214c2");
         spell = await ethers.getContractAt("IERC20Metadata", "0x090185f2135308BaD17527004364eBcC2D37e5F6");
-        cvxEth = await ethers.getContractAt("IERC20Metadata","0x3A283D9c08E8b55966afb64C515f5143cf907611" )
+        cvxEth = await ethers.getContractAt("IERC20Metadata", "0x3A283D9c08E8b55966afb64C515f5143cf907611")
+        yCRV = await ethers.getContractAt("IERC20Metadata", "0xfcc5c47be19d06bf83eb04298b026f81069ff65b");
         initializeRoutes();
     });
 
@@ -389,7 +391,7 @@ describe("Exchange (full setup operations)", async () => {
 
 
     it("Should check all available swaps", async () => {
-        const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx, alluo, weth, reth, ldo, spell, angle, eurs, ageur, eurt, stEthEth, fraxUsdc, cvxEth];
+        const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx, alluo, weth, reth, ldo, spell, angle, eurs, ageur, eurt, stEthEth, fraxUsdc, cvxEth, yCRV];
         await weth.deposit({ value: parseEther("1000.0") });
 
         // get all supported coins - swap ETH for all coins

@@ -22,7 +22,7 @@ interface ICurveCrv {
 
     function remove_liquidity_one_coin(
         uint256 token_amount,
-        uint128 i,
+        int128 i,
         uint256 min_amount
     ) external returns (uint256);
 }
@@ -62,8 +62,7 @@ contract CurveYCrvAdapter is IExchangeAdapter {
                 address(0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511),
                 crvAmountToWithdraw
             );
-            return
-                CRVethCurve.exchange(1, 0, amount, crvAmountToWithdraw, false);
+            return CRVethCurve.exchange(1, 0, crvAmountToWithdraw, 0, false);
         } else {
             revert("CurveYCrvAdapter: Can't Swap");
         }

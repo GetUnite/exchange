@@ -51,11 +51,9 @@ contract TokenFetcher is AccessControl {
     /// @dev New Token pushed at last index
     /// @param _newTokenToPush Tuple of matching struct
     /// @return Array of new listed major tokens
-    function addMajorCoins(MajorRoute[] memory _newTokenToPush)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        returns (MajorRoute[] memory)
-    {
+    function addMajorCoins(
+        MajorRoute[] memory _newTokenToPush
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) returns (MajorRoute[] memory) {
         for (uint256 i = 0; i < _newTokenToPush.length; i++) {
             majorCoins.push(_newTokenToPush[i]);
         }
@@ -66,11 +64,9 @@ contract TokenFetcher is AccessControl {
     /// @dev New Token pushed at last index
     /// @param _newTokenToPush Tuple of matching struct
     /// @return Array of new listed minor tokens
-    function addMinorCoins(MinorRoute[] memory _newTokenToPush)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        returns (MinorRoute[] memory)
-    {
+    function addMinorCoins(
+        MinorRoute[] memory _newTokenToPush
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) returns (MinorRoute[] memory) {
         for (uint256 i = 0; i < _newTokenToPush.length; i++) {
             minorCoins.push(_newTokenToPush[i]);
         }
@@ -107,11 +103,9 @@ contract TokenFetcher is AccessControl {
     /// @dev Switch actual token's index to last one and delete it
     /// @param _tokenIndex Index of token to delete.
     /// @return Array of latest listed major tokens
-    function deleteMajorCoin(uint256 _tokenIndex)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        returns (MajorRoute[] memory)
-    {
+    function deleteMajorCoin(
+        uint256 _tokenIndex
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) returns (MajorRoute[] memory) {
         majorCoins[_tokenIndex] = majorCoins[majorCoins.length - 1];
         majorCoins.pop();
         return majorCoins;
@@ -121,11 +115,9 @@ contract TokenFetcher is AccessControl {
     /// @dev Switch actual token's index to last one and delete it
     /// @param _tokenIndex Index of token to delete.
     /// @return Array of latest listed minor tokens
-    function deleteMinorCoin(uint256 _tokenIndex)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        returns (MinorRoute[] memory)
-    {
+    function deleteMinorCoin(
+        uint256 _tokenIndex
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) returns (MinorRoute[] memory) {
         minorCoins[_tokenIndex] = minorCoins[minorCoins.length - 1];
         minorCoins.pop();
         return minorCoins;

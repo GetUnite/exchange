@@ -43,34 +43,35 @@ This section lists files that are in scope for the metrics report.
 
 ### <span id=t-source-Units-in-Scope>Source Units in Scope</span>
 
-Source Units Analyzed: **`22`**<br>
-Source Units in Scope: **`22`** (**100%**)
+Source Units Analyzed: **`23`**<br>
+Source Units in Scope: **`23`** (**100%**)
 
 | Type | File   | Logic Contracts | Interfaces | Lines | nLines | nSLOC | Comment Lines | Complex. Score | Capabilities |
 |========|=================|============|=======|=======|===============|==============|  
-| 📝 | contracts\Exchange.sol | 1 | **** | 665 | 570 | 358 | 119 | 339 | **<abbr title='Payable Functions'>💰</abbr>** |
-| 📝 | contracts\ForceSender.sol | 1 | **** | 12 | 12 | 9 | 1 | 7 | **<abbr title='Payable Functions'>💰</abbr><abbr title='Destroyable Contract'>💣</abbr>** |
-| 📝 | contracts\TokenFetcher.sol | 1 | **** | 133 | 111 | 65 | 32 | 46 | **** |
-| 📝🔍 | contracts\adapters\BalancerAdapter.sol | 1 | 3 | 200 | 153 | 126 | 5 | 125 | **<abbr title='Payable Functions'>💰</abbr>** |
-| 📝🔍 | contracts\adapters\Curve3CrvSwapAdapter.sol | 1 | 1 | 78 | 55 | 38 | 8 | 52 | **<abbr title='Payable Functions'>💰</abbr>** |
-| 📝🔍 | contracts\adapters\Curve3CryptoAdapter.sol | 1 | 1 | 86 | 55 | 38 | 6 | 54 | **<abbr title='Payable Functions'>💰</abbr>** |
-| 📝🔍 | contracts\adapters\CurveCrvAdapter.sol | 1 | 1 | 77 | 45 | 32 | 5 | 40 | **<abbr title='Payable Functions'>💰</abbr>** |
-| 📝🔍 | contracts\adapters\CurveCvxAdapter.sol | 1 | 1 | 77 | 45 | 32 | 5 | 40 | **<abbr title='Payable Functions'>💰</abbr>** |
-| 📝🔍 | contracts\adapters\CurveCvxEthAdapter.sol | 1 | 1 | 80 | 49 | 36 | 8 | 46 | **<abbr title='Payable Functions'>💰</abbr>** |
-| 📝🔍 | contracts\adapters\CurveEURAdapter.sol | 1 | 2 | 102 | 53 | 36 | 10 | 56 | **<abbr title='Payable Functions'>💰</abbr>** |
-| 📝🔍 | contracts\adapters\CurveEURSUSDAdapter.sol | 1 | 1 | 64 | 33 | 23 | 5 | 36 | **<abbr title='Payable Functions'>💰</abbr>** |
-| 📝🔍 | contracts\adapters\CurveEURtAdapter.sol | 1 | 1 | 90 | 56 | 38 | 15 | 50 | **<abbr title='Payable Functions'>💰</abbr>** |
-| 📝🔍 | contracts\adapters\CurveFraxAdapter.sol | 1 | 2 | 124 | 83 | 60 | 12 | 73 | **<abbr title='Payable Functions'>💰</abbr>** |
-| 📝🔍 | contracts\adapters\CurveFraxUsdcAdapter.sol | 1 | 1 | 83 | 52 | 36 | 8 | 46 | **<abbr title='Payable Functions'>💰</abbr>** |
-| 📝🔍 | contracts\adapters\CurveStEthAdapter.sol | 1 | 1 | 87 | 56 | 44 | 8 | 58 | **<abbr title='Payable Functions'>💰</abbr>** |
-| 📝🔍 | contracts\adapters\CurveUstAdapter.sol | 1 | 2 | 124 | 83 | 60 | 12 | 71 | **<abbr title='Payable Functions'>💰</abbr>** |
+| 📝 | contracts\Exchange.sol | 1 | **** | 660 | 570 | 358 | 119 | 339 | **<abbr title='Payable Functions'>💰</abbr>** |
+| 📝 | contracts\TokenFetcher.sol | 1 | **** | 125 | 111 | 65 | 32 | 46 | **** |
+| 📝🔍 | contracts\adapters\BalancerAdapter.sol | 1 | 3 | 202 | 153 | 126 | 5 | 125 | **<abbr title='Payable Functions'>💰</abbr>** |
+| 📝🔍 | contracts\adapters\Curve3CrvSwapAdapter.sol | 1 | 1 | 80 | 55 | 38 | 8 | 52 | **<abbr title='Payable Functions'>💰</abbr>** |
+| 📝🔍 | contracts\adapters\Curve3CryptoAdapter.sol | 1 | 1 | 88 | 55 | 38 | 6 | 54 | **<abbr title='Payable Functions'>💰</abbr>** |
+| 📝🔍 | contracts\adapters\CurveCrvAdapter.sol | 1 | 1 | 78 | 45 | 32 | 5 | 40 | **<abbr title='Payable Functions'>💰</abbr>** |
+| 📝🔍 | contracts\adapters\CurveCvxAdapter.sol | 1 | 1 | 78 | 45 | 32 | 5 | 40 | **<abbr title='Payable Functions'>💰</abbr>** |
+| 📝🔍 | contracts\adapters\CurveCvxEthAdapter.sol | 1 | 1 | 81 | 49 | 37 | 8 | 46 | **<abbr title='Payable Functions'>💰</abbr>** |
+| 📝🔍 | contracts\adapters\CurveEURAdapter.sol | 1 | 2 | 104 | 53 | 36 | 10 | 56 | **<abbr title='Payable Functions'>💰</abbr>** |
+| 📝🔍 | contracts\adapters\CurveEURSUSDAdapter.sol | 1 | 1 | 65 | 33 | 23 | 5 | 36 | **<abbr title='Payable Functions'>💰</abbr>** |
+| 📝🔍 | contracts\adapters\CurveEURtAdapter.sol | 1 | 1 | 88 | 56 | 38 | 15 | 50 | **<abbr title='Payable Functions'>💰</abbr>** |
+| 📝🔍 | contracts\adapters\CurveFraxAdapter.sol | 1 | 2 | 128 | 84 | 61 | 12 | 73 | **<abbr title='Payable Functions'>💰</abbr>** |
+| 📝🔍 | contracts\adapters\CurveFraxDolaAdapter.sol | 1 | 1 | 75 | 48 | 36 | 9 | 42 | **<abbr title='Payable Functions'>💰</abbr>** |
+| 📝🔍 | contracts\adapters\CurveFraxUsdcAdapter.sol | 1 | 1 | 81 | 49 | 37 | 8 | 46 | **<abbr title='Payable Functions'>💰</abbr>** |
+| 📝🔍 | contracts\adapters\CurveStEthAdapter.sol | 1 | 1 | 89 | 57 | 45 | 8 | 58 | **<abbr title='Payable Functions'>💰</abbr>** |
+| 📝🔍 | contracts\adapters\CurveUstAdapter.sol | 1 | 2 | 128 | 84 | 61 | 12 | 71 | **<abbr title='Payable Functions'>💰</abbr>** |
+| 📝🔍 | contracts\adapters\CurveYCrvAdapter.sol | 1 | 1 | 82 | 49 | 37 | 5 | 40 | **<abbr title='Payable Functions'>💰</abbr>** |
 | 📝🔍 | contracts\adapters\PolygonCurve3Adapter.sol | 1 | 1 | 84 | 50 | 36 | 10 | 51 | **<abbr title='Payable Functions'>💰</abbr>** |
-| 📝🔍 | contracts\adapters\SushiswapAdapter.sol | 1 | 2 | 207 | 67 | 54 | 6 | 120 | **<abbr title='Payable Functions'>💰</abbr><abbr title='Initiates ETH Value Transfer'>📤</abbr>** |
-| 📝🔍 | contracts\adapters\UniswapV3Adapter.sol | 1 | 1 | 65 | 49 | 37 | 5 | 34 | **<abbr title='Payable Functions'>💰</abbr>** |
+| 📝🔍 | contracts\adapters\SushiswapAdapter.sol | 1 | 2 | 201 | 65 | 55 | 6 | 120 | **<abbr title='Payable Functions'>💰</abbr><abbr title='Initiates ETH Value Transfer'>📤</abbr>** |
+| 📝🔍 | contracts\adapters\UniswapV3Adapter.sol | 1 | 1 | 68 | 50 | 38 | 5 | 34 | **<abbr title='Payable Functions'>💰</abbr>** |
 | 🔍 | contracts\interfaces\IExchange.sol | **** | 1 | 23 | 12 | 9 | 5 | 8 | **<abbr title='Payable Functions'>💰</abbr>** |
 | 🔍 | contracts\interfaces\IExchangeAdapter.sol | **** | 1 | 26 | 6 | 3 | 4 | 16 | **<abbr title='Payable Functions'>💰</abbr>** |
 | 🔍 | contracts\interfaces\IWrappedEther.sol | **** | 1 | 30 | 5 | 3 | 1 | 26 | **<abbr title='Payable Functions'>💰</abbr>** |
-| 📝🔍 | **Totals** | **19** | **25** | **2517**  | **1700** | **1173** | **290** | **1394** | **<abbr title='Payable Functions'>💰</abbr><abbr title='Destroyable Contract'>💣</abbr><abbr title='Initiates ETH Value Transfer'>📤</abbr>** |
+| 📝🔍 | **Totals** | **20** | **27** | **2664**  | **1784** | **1244** | **303** | **1469** | **<abbr title='Payable Functions'>💰</abbr><abbr title='Initiates ETH Value Transfer'>📤</abbr>** |
 
 <sub>
 Legend: <a onclick="toggleVisibility('table-legend', this)">[➕]</a>
@@ -152,14 +153,14 @@ The analysis finished with **`0`** errors and **`0`** duplicate files.
 
 #### <span id=t-inline-documentation>Inline Documentation</span>
 
-- **Comment-to-Source Ratio:** On average there are`6.5` code lines per comment (lower=better).
+- **Comment-to-Source Ratio:** On average there are`6.64` code lines per comment (lower=better).
 - **ToDo's:** `0` 
 
 #### <span id=t-components>Components</span>
 
 | 📝Contracts   | 📚Libraries | 🔍Interfaces | 🎨Abstract |
 |=============|===========|============|============|
-| 19 | 0  | 25  | 0 |
+| 20 | 0  | 27  | 0 |
 
 #### <span id=t-exposed-functions>Exposed Functions</span>
 
@@ -167,23 +168,23 @@ This section lists functions that are explicitly declared public or payable. Ple
 
 | 🌐Public   | 💰Payable |
 |============|===========|
-| 184 | 64  | 
+| 195 | 69  | 
 
 | External   | Internal | Private | Pure | View |
 |============|==========|=========|======|======|
-| 167 | 83  | 4 | 22 | 24 |
+| 177 | 87  | 4 | 23 | 24 |
 
 #### <span id=t-statevariables>StateVariables</span>
 
 | Total      | 🌐Public  |
 |============|===========|
-| 29  | 25 |
+| 32  | 31 |
 
 #### <span id=t-capabilities>Capabilities</span>
 
 | Solidity Versions observed | 🧪 Experimental Features | 💰 Can Receive Funds | 🖥 Uses Assembly | 💣 Has Destroyable Contracts | 
 |============|===========|===========|===========|
-| `0.8.11`<br/>`^0.8.11`<br/>`^0.8.9`<br/>`^0.8.4` |  | `yes` | **** | `yes` | 
+| `^0.8.11`<br/>`0.8.11`<br/>`^0.8.9`<br/>`^0.8.4` |  | `yes` | **** | **** | 
 
 | 📤 Transfers ETH | ⚡ Low-Level Calls | 👥 DelegateCall | 🧮 Uses Hash Functions | 🔖 ECRecover | 🌀 New/Create/Create2 |
 |============|===========|===========|===========|===========|
@@ -198,7 +199,7 @@ This section lists functions that are explicitly declared public or payable. Ple
 | Dependency / Import Path | Count  | 
 |==========================|========|
 | @openzeppelin/contracts/access/AccessControl.sol | 2 |
-| @openzeppelin/contracts/interfaces/IERC20.sol | 12 |
+| @openzeppelin/contracts/interfaces/IERC20.sol | 14 |
 | @openzeppelin/contracts/interfaces/IERC20Metadata.sol | 2 |
 | @openzeppelin/contracts/security/ReentrancyGuard.sol | 1 |
 | @openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol | 2 |
@@ -263,28 +264,29 @@ This section lists functions that are explicitly declared public or payable. Ple
 
 |  File Name  |  SHA-1 Hash  |
 |-------------|--------------|
-| contracts\Exchange.sol | 142cc4f1fecc9f7d2d434ced37f01401a3f8138c |
-| contracts\ForceSender.sol | 67de184efedd5d77ec03390acb4a0a60b6072e2e |
-| contracts\TokenFetcher.sol | 48c8540186e8b7c6f334da05833c6e30d96041dd |
-| contracts\adapters\BalancerAdapter.sol | e1659a380fbf30024adcde4922c4825e6b2ae950 |
-| contracts\adapters\Curve3CrvSwapAdapter.sol | f4aad906689cb17737d4cf559803692155f44f93 |
-| contracts\adapters\Curve3CryptoAdapter.sol | 6ba3f9aa038df760d0e15e6233e365501c0e2c65 |
-| contracts\adapters\CurveCrvAdapter.sol | 91c2b850f94c0c514a0f1522f3d0b86d749da87b |
-| contracts\adapters\CurveCvxAdapter.sol | cd95c9fc1c4c2edacb40d4b32863aebf680b766a |
-| contracts\adapters\CurveCvxEthAdapter.sol | 6a7d2eec5facc5df9e38370b6178d9206c647202 |
-| contracts\adapters\CurveEURAdapter.sol | 2d2899f03d5895559db1251151e4b8c98609dc2e |
-| contracts\adapters\CurveEURSUSDAdapter.sol | 884f6376cd1e61c40de200fb2372a6e60f8e0ae0 |
-| contracts\adapters\CurveEURtAdapter.sol | d135f042aebdcf0b78bb6b5a5acb3b147f13a3df |
-| contracts\adapters\CurveFraxAdapter.sol | 5895e6828000f7c9a2cc556e3aa00fb94e450dba |
-| contracts\adapters\CurveFraxUsdcAdapter.sol | fd07d96accc0406b61833f024979df80b9d858df |
-| contracts\adapters\CurveStEthAdapter.sol | 3af86200ad5552e2ae0177ef8c30159fccebf7a6 |
-| contracts\adapters\CurveUstAdapter.sol | b173ef2801097f32b924990ecc4b1e1f111b24b9 |
-| contracts\adapters\PolygonCurve3Adapter.sol | c7318dc3dd5ffc13ddcca4f4e0c1ef016b87f057 |
-| contracts\adapters\SushiswapAdapter.sol | 11eb6942a44ecea61723a06f5da53ab16d4c8d50 |
-| contracts\adapters\UniswapV3Adapter.sol | 7eb221fb628afbc5a34cdd4c5ce0920123ae68fe |
-| contracts\interfaces\IExchange.sol | dd2b86706ddb250d77d7368225dafdc550d38da4 |
-| contracts\interfaces\IExchangeAdapter.sol | 68bfda5477542a1c99984c765e2cddfce58d6c2f |
-| contracts\interfaces\IWrappedEther.sol | fe611529a13c2f2e65f42e3c404f36ded73e6bb8 |
+| contracts\Exchange.sol | 53c6fb4ea51725b969f3b416789cac95c1c89784 |
+| contracts\TokenFetcher.sol | f848b40b284ba41a90766a2d6da07dbc0d2348df |
+| contracts\adapters\BalancerAdapter.sol | d9f07b50cc62771c566b399dc04077dfd0224090 |
+| contracts\adapters\Curve3CrvSwapAdapter.sol | 7b12eddab2d88667a10f0aaf12650b9456831334 |
+| contracts\adapters\Curve3CryptoAdapter.sol | 7f8de7ede7750bb0508880ef7310150bfbf38e1b |
+| contracts\adapters\CurveCrvAdapter.sol | 63a2e0d72b061862bb3cc19425b70f9c55f0edf7 |
+| contracts\adapters\CurveCvxAdapter.sol | 31dd00f00e0ff3b066123f4b847c176a03241159 |
+| contracts\adapters\CurveCvxEthAdapter.sol | 5e046ba13ff3e6c2df3075a37bed5481a2701351 |
+| contracts\adapters\CurveEURAdapter.sol | a121cb7516c5f29820cf0e5670623617bad01dc5 |
+| contracts\adapters\CurveEURSUSDAdapter.sol | af41b4fd0935038646cfc96c405333bbd197532b |
+| contracts\adapters\CurveEURtAdapter.sol | c18d3b4baace005eda007829ab46a6ce43dff640 |
+| contracts\adapters\CurveFraxAdapter.sol | 4e9fd579f1f45e0ea82b4c97a19e72bac4386297 |
+| contracts\adapters\CurveFraxDolaAdapter.sol | d5f340d77d1ca671d3556833e7693f80a425decd |
+| contracts\adapters\CurveFraxUsdcAdapter.sol | 4fffac5afc6a4e4dd24de1db94d2031bdbe22135 |
+| contracts\adapters\CurveStEthAdapter.sol | 1dcaab45b83a54f8c9f398eeb76fd46268a2028d |
+| contracts\adapters\CurveUstAdapter.sol | 07b28338899d29086fe470f9e1fb0443d40d3b3f |
+| contracts\adapters\CurveYCrvAdapter.sol | 119f3983ca3ad6347dec879455d80532860537d4 |
+| contracts\adapters\PolygonCurve3Adapter.sol | 23d48b78b90b079d4df799be55575a1bcd256fb7 |
+| contracts\adapters\SushiswapAdapter.sol | da847f96c54825a8b51316466174113496d23003 |
+| contracts\adapters\UniswapV3Adapter.sol | a3ba5cb341fa9c59bd6a4604ca9a5de781d542ba |
+| contracts\interfaces\IExchange.sol | 47abb358bbb471748c5ec4362718868e8b25caae |
+| contracts\interfaces\IExchangeAdapter.sol | bb9780af8cded4971f44feea2f9bbb6c5daea654 |
+| contracts\interfaces\IWrappedEther.sol | 6ae7b4bf98e5a2d004f1ccd39060faf3457d8f29 |
 
 
  Contracts Description Table
@@ -315,10 +317,6 @@ This section lists functions that are explicitly declared public or payable. Ple
 | └ | _exitLiquidityPool | Private 🔐 | 🛑  | |
 | └ | reverseRouteEdge | Private 🔐 |   | |
 | └ | <Receive Ether> | External ❗️ |  💵 |NO❗️ |
-||||||
-| **ForceSender** | Implementation |  |||
-| └ | <Constructor> | Public ❗️ |  💵 |NO❗️ |
-| └ | forceSend | External ❗️ | 🛑  |NO❗️ |
 ||||||
 | **TokenFetcher** | Implementation | AccessControl |||
 | └ | <Constructor> | Public ❗️ | 🛑  |NO❗️ |
@@ -455,6 +453,16 @@ This section lists functions that are explicitly declared public or payable. Ple
 | └ | enterPool | External ❗️ |  💵 |NO❗️ |
 | └ | exitPool | External ❗️ |  💵 |NO❗️ |
 ||||||
+| **ICurveFraxDola** | Interface |  |||
+| └ | add_liquidity | External ❗️ | 🛑  |NO❗️ |
+| └ | remove_liquidity_one_coin | External ❗️ | 🛑  |NO❗️ |
+||||||
+| **CurveFraxDolaAdapter** | Implementation | IExchangeAdapter |||
+| └ | indexByCoin | Public ❗️ |   |NO❗️ |
+| └ | executeSwap | External ❗️ |  💵 |NO❗️ |
+| └ | enterPool | External ❗️ |  💵 |NO❗️ |
+| └ | exitPool | External ❗️ |  💵 |NO❗️ |
+||||||
 | **ICurveFrax** | Interface |  |||
 | └ | exchange | External ❗️ | 🛑  |NO❗️ |
 | └ | add_liquidity | External ❗️ | 🛑  |NO❗️ |
@@ -489,6 +497,16 @@ This section lists functions that are explicitly declared public or payable. Ple
 | **CurveUstAdapter** | Implementation |  |||
 | └ | indexByUnderlyingCoin | Public ❗️ |   |NO❗️ |
 | └ | indexByCoin | Public ❗️ |   |NO❗️ |
+| └ | executeSwap | External ❗️ |  💵 |NO❗️ |
+| └ | enterPool | External ❗️ |  💵 |NO❗️ |
+| └ | exitPool | External ❗️ |  💵 |NO❗️ |
+||||||
+| **ICurveCrv** | Interface |  |||
+| └ | exchange | External ❗️ | 🛑  |NO❗️ |
+| └ | add_liquidity | External ❗️ | 🛑  |NO❗️ |
+| └ | remove_liquidity_one_coin | External ❗️ | 🛑  |NO❗️ |
+||||||
+| **CurveYCrvAdapter** | Implementation | IExchangeAdapter |||
 | └ | executeSwap | External ❗️ |  💵 |NO❗️ |
 | └ | enterPool | External ❗️ |  💵 |NO❗️ |
 | └ | exitPool | External ❗️ |  💵 |NO❗️ |

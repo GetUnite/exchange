@@ -162,7 +162,7 @@ describe("Exchange", async () => {
         });
         console.log("\nForking Ethereum Mainnet from latest block. This test may take some time.")
 
-        const investorAddress = "0xf977814e90da44bfa03b6295a0616a897441acec"
+        const investorAddress = process.env.IMPERSONATE_ADDRESS as string;
 
         await ethers.provider.send(
             'hardhat_impersonateAccount',

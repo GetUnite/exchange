@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
-import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "./../interfaces/IExchangeAdapter.sol";
 
 // solhint-disable func-name-mixedcase
@@ -44,13 +43,13 @@ contract CurvecvxCrvFraxAdapter is IExchangeAdapter {
         ICurvecvxCrvFRax curve = ICurvecvxCrvFRax(pool);
         if (toToken == CVXCRV_FRAXBP_LPTOKEN) {
             uint256 i = uint128(indexByCoin(fromToken));
-            require(i != 0, "CurveFraxDolaAdapter: Can't Swap");
+            require(i != 0, "CurvecvxCrvFraxAdapter: Can't Swap");
             uint256[3] memory entryVector;
             entryVector[i - 1] = amount;
             return curve.add_liquidity(CVXCRV_FRAXBP_POOL, entryVector, 0);
         } else if (fromToken == CVXCRV_FRAXBP_LPTOKEN) {
             uint256 i = indexByCoin(toToken);
-            require(i != 0, "CurveFraxDolaAdapter: Can't Swap");
+            require(i != 0, "CurvecvxCrvFraxAdapter: !Swap");
             return
                 curve.remove_liquidity_one_coin(
                     CVXCRV_FRAXBP_POOL,
@@ -59,7 +58,7 @@ contract CurvecvxCrvFraxAdapter is IExchangeAdapter {
                     0
                 );
         } else {
-            revert("CurveFraxDolaAdapter: Can't Swap");
+            revert("CurvecvxCrvFraxAdapter: !Swap");
         }
     }
 
@@ -69,7 +68,7 @@ contract CurvecvxCrvFraxAdapter is IExchangeAdapter {
         address,
         uint256
     ) external payable returns (uint256) {
-        revert("CurveFraxDolaAdapter: Can't Swap");
+        revert("CurvecvxCrvFraxAdapter: !Swap");
     }
 
     // 0x9d756192  =>  exitPool(address,address,address,uint256)
@@ -78,6 +77,6 @@ contract CurvecvxCrvFraxAdapter is IExchangeAdapter {
         address,
         uint256
     ) external payable returns (uint256) {
-        revert("CurveFraxDolaAdapter: Can't Swap");
+        revert("CurvecvxCrvFraxAdapter: !Swap");
     }
 }

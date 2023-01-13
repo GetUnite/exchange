@@ -7,10 +7,10 @@ import "./../interfaces/IWrappedEther.sol";
 // solhint-disable func-name-mixedcase
 // solhint-disable var-name-mixedcase
 interface ICurveFrxEth {
-    function add_liquidity(uint256[2] memory _amounts, uint256 _min_mint_amount)
-        external
-        payable
-        returns (uint256);
+    function add_liquidity(
+        uint256[2] memory _amounts,
+        uint256 _min_mint_amount
+    ) external payable returns (uint256);
 
     function remove_liquidity_one_coin(
         uint256 _burn_amount,

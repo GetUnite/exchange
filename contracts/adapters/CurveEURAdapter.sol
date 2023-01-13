@@ -14,10 +14,9 @@ interface ICurveEURSUSD {
         uint256 min_dy
     ) external returns (uint256);
 
-    function add_liquidity(
-        uint256[2] memory amounts,
-        uint256 min_mint_amount
-    ) external returns (uint256);
+    function add_liquidity(uint256[2] memory amounts, uint256 min_mint_amount)
+        external
+        returns (uint256);
 
     function remove_liquidity_one_coin(
         uint256 token_amount,
@@ -34,10 +33,9 @@ interface ICurveEUR {
         uint256 _min_dy
     ) external returns (uint256);
 
-    function add_liquidity(
-        uint256[3] memory _amounts,
-        uint256 _min_mint_amount
-    ) external returns (uint256);
+    function add_liquidity(uint256[3] memory _amounts, uint256 _min_mint_amount)
+        external
+        returns (uint256);
 
     function remove_liquidity_one_coin(
         uint256 _burn_amount,

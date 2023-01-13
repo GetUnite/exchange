@@ -16,8 +16,8 @@ interface IExchange {
         uint256 minAmountOut
     ) external payable returns (uint256);
 
-    function buildRoute(
-        address from,
-        address to
-    ) external view returns (RouteEdge[] memory);
+    function buildRoute(address from, address to)
+        external
+        view
+        returns (RouteEdge[] memory);
 }

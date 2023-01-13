@@ -70,9 +70,7 @@ interface IBalancer is IBalancerStructs {
         JoinPoolRequest memory request
     ) external payable;
 
-    function getPoolTokens(
-        bytes32 poolId
-    )
+    function getPoolTokens(bytes32 poolId)
         external
         view
         returns (

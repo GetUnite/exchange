@@ -513,8 +513,8 @@ async function setupfrxEthLpMinorCoin() {
     await exchange.registerAdapters([frxEthAdapter.address], [17]);
     await exchange.createMinorCoinEdge([edge1]);
 
-    customAmounts[frxEthLp.address] = parseUnits("0.001", await wbtc.decimals());
-    customAmounts[frxEthLp.address] = parseUnits("0.001", await wbtc.decimals());
+    customAmounts[frxEthLp.address] = parseUnits("0.1", await frxEthLp.decimals());
+
     supportedCoinsList.push(frxEthLp);
 
     console.log("Minor coin (frxEthLp) is set.")
@@ -533,8 +533,6 @@ async function setupcvxCrvFraxLPMinorCoin() {
     await exchange.registerAdapters([cvxCrvFraxAdapter.address], [18]);
     await exchange.createMinorCoinEdge([edge1]);
 
-    customAmounts[cvxCrvFraxLP.address] = parseUnits("0.001", await wbtc.decimals());
-    customAmounts[cvxCrvFraxLP.address] = parseUnits("0.001", await wbtc.decimals());
     supportedCoinsList.push(cvxCrvFraxLP);
 
     console.log("Minor coin (cvxCrvFraxLP) is set.")

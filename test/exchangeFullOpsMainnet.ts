@@ -526,7 +526,6 @@ async function setupCurveLpMinorCoins() {
     customAmounts[frxEthLp.address] = parseUnits("0.1", await frxEthLp.decimals());
 
     supportedCoinsList.push(frxEthLp, cvxCrvFraxLP);
-    supportedCoinsList.push(cvxCrvFraxLP);
 
     console.log("Minor coins (frxEthLp, cvxCrvFraxLP) is set.")
 

@@ -2,7 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumberish } from "ethers";
 import { formatEther, formatUnits, parseEther, parseUnits } from "ethers/lib/utils";
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { Exchange, IERC20, IWrappedEther } from "../typechain";
 
 describe("Exchange", async () => {
@@ -150,6 +150,18 @@ describe("Exchange", async () => {
     }
 
     before(async () => {
+        await network.provider.request({
+            method: "hardhat_reset",
+            params: [{
+                forking: {
+                    enabled: true,
+                    jsonRpcUrl: process.env.MAINNET_FORKING_URL as string,
+                    blockNumber: 15931417
+                },
+            },],
+        });
+        console.log("\nForking Ethereum Mainnet from latest block. This test may take some time.")
+
         const investorAddress = process.env.IMPERSONATE_ADDRESS as string;
 
         await ethers.provider.send(

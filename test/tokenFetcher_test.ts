@@ -13,6 +13,17 @@ describe("Token Fetcher Tests", async () => {
 
 
   before(async () => {
+    await network.provider.request({
+      method: "hardhat_reset",
+      params: [{
+          forking: {
+              enabled: true,
+              jsonRpcUrl: process.env.MAINNET_FORKING_URL as string,
+              blockNumber: 15931417
+          },
+      },],
+  });
+
     const gnosisAddress = "0x1F020A4943EB57cd3b2213A66b355CB662Ea43C3"
     await network.provider.request({
       method: "hardhat_reset",

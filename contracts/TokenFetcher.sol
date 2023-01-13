@@ -54,7 +54,7 @@ contract TokenFetcher is AccessControl {
     function addMajorCoins(
         MajorRoute[] memory _newTokenToPush
     ) external onlyRole(DEFAULT_ADMIN_ROLE) returns (MajorRoute[] memory) {
-        for (uint i = 0; i < _newTokenToPush.length; i++) {
+        for (uint256 i = 0; i < _newTokenToPush.length; i++) {
             majorCoins.push(_newTokenToPush[i]);
         }
         return majorCoins;
@@ -67,7 +67,7 @@ contract TokenFetcher is AccessControl {
     function addMinorCoins(
         MinorRoute[] memory _newTokenToPush
     ) external onlyRole(DEFAULT_ADMIN_ROLE) returns (MinorRoute[] memory) {
-        for (uint i = 0; i < _newTokenToPush.length; i++) {
+        for (uint256 i = 0; i < _newTokenToPush.length; i++) {
             minorCoins.push(_newTokenToPush[i]);
         }
         return minorCoins;

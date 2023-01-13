@@ -19,7 +19,7 @@ describe("Curve Frax pool extra tests", async () => {
     }
 
     before(async () => {
-        const investorAddress = process.env.IMPERSONATE_ADDRESS as string;
+        const investorAddress = "0xf977814e90da44bfa03b6295a0616a897441acec"
 
         await ethers.provider.send(
             'hardhat_impersonateAccount',

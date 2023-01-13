@@ -8,8 +8,10 @@ import "./../interfaces/IExchangeAdapter.sol";
 // solhint-disable func-name-mixedcase
 // solhint-disable var-name-mixedcase
 interface ICurve3Crv {
-    function add_liquidity(uint256[3] memory amounts, uint256 min_mint_amount)
-        external;
+    function add_liquidity(
+        uint256[3] memory amounts,
+        uint256 min_mint_amount
+    ) external;
 
     function remove_liquidity_one_coin(
         uint256 _token_amount,
@@ -19,7 +21,7 @@ interface ICurve3Crv {
 }
 
 contract Curve3CrvSwapAdapter is IExchangeAdapter {
-    IERC20 public constant token3crv =
+    IERC20 public constant TOKEN_3CRV =
         IERC20(0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490);
 
     function indexByCoin(address coin) public pure returns (int128) {
@@ -37,7 +39,7 @@ contract Curve3CrvSwapAdapter is IExchangeAdapter {
     ) external payable returns (uint256) {
         ICurve3Crv pool3crv = ICurve3Crv(pool);
 
-        if (toToken == address(token3crv)) {
+        if (toToken == address(TOKEN_3CRV)) {
             // enter 3crv pool to get 3crv token
             int128 i = indexByCoin(fromToken);
             require(i != 0, "Curve3CrvSwapAdapter: can't swap");
@@ -46,8 +48,8 @@ contract Curve3CrvSwapAdapter is IExchangeAdapter {
 
             pool3crv.add_liquidity(amounts, 0);
 
-            return token3crv.balanceOf(address(this));
-        } else if (fromToken == address(token3crv)) {
+            return TOKEN_3CRV.balanceOf(address(this));
+        } else if (fromToken == address(TOKEN_3CRV)) {
             // exit 3crv pool to get stable
             int128 i = indexByCoin(toToken);
             require(i != 0, "Curve3CrvSwapAdapter: can't swap");

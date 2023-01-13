@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.11;
+pragma solidity ^0.8.11;
 
 import "./../interfaces/IExchangeAdapter.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
@@ -15,9 +15,10 @@ interface ICurveCrv {
         bool use_eth
     ) external returns (uint256);
 
-    function add_liquidity(uint256[2] memory amounts, uint256 min_mint_amount)
-        external
-        returns (uint256);
+    function add_liquidity(
+        uint256[2] memory amounts,
+        uint256 min_mint_amount
+    ) external returns (uint256);
 
     function remove_liquidity_one_coin(
         uint256 token_amount,

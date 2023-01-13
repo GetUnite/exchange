@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.11;
+pragma solidity ^0.8.11;
 
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -54,13 +54,13 @@ contract Exchange is ReentrancyGuard, AccessControl {
         IWrappedEther(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
     // bytes4(keccak256(bytes("executeSwap(address,address,address,uint256)")))
-    bytes4 public constant executeSwapSigHash = 0x6012856e;
+    bytes4 public constant EXECUTE_SWAP_SIG_HASH = 0x6012856e;
 
     // bytes4(keccak256(bytes("enterPool(address,address,uint256)")))
-    bytes4 public constant enterPoolSigHash = 0x73ec962e;
+    bytes4 public constant ENTER_POOL_SIG_HASH = 0x73ec962e;
 
     // bytes4(keccak256(bytes("exitPool(address,address,uint256)")))
-    bytes4 public constant exitPoolSigHash = 0x660cb8d4;
+    bytes4 public constant EXIT_POOL_SIG_HASH = 0x660cb8d4;
 
     constructor(address gnosis, bool isTesting) {
         require(gnosis.isContract(), "Exchange: not contract");
@@ -169,10 +169,9 @@ contract Exchange is ReentrancyGuard, AccessControl {
 
     /// @notice Unregister swap/lp token adapters
     /// @param protocolId protocol id of adapter to remove
-    function unregisterAdapters(uint32[] calldata protocolId)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function unregisterAdapters(
+        uint32[] calldata protocolId
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 length = protocolId.length;
         for (uint256 i = 0; i < length; i++) {
             delete adapters[protocolId[i]];
@@ -183,10 +182,9 @@ contract Exchange is ReentrancyGuard, AccessControl {
     /// @dev In order for swap from/to minor coin to be working, `toCoin` should
     /// be registered as major
     /// @param edges array of edges to store
-    function createMinorCoinEdge(RouteEdge[] calldata edges)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function createMinorCoinEdge(
+        RouteEdge[] calldata edges
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 length = edges.length;
         for (uint256 i = 0; i < length; i++) {
             // validate protocol id - zero is interpreted as
@@ -219,10 +217,9 @@ contract Exchange is ReentrancyGuard, AccessControl {
 
     /// @notice Remove internal minor route piece
     /// @param edges source coin of route to delete
-    function deleteMinorCoinEdge(address[] calldata edges)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function deleteMinorCoinEdge(
+        address[] calldata edges
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         for (uint256 i = 0; i < edges.length; i++) {
             delete minorCoins[edges[i]];
         }
@@ -230,10 +227,9 @@ contract Exchange is ReentrancyGuard, AccessControl {
 
     /// @notice Create route between two tokens and set them as major
     /// @param routes array of routes
-    function createInternalMajorRoutes(RouteEdge[][] calldata routes)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function createInternalMajorRoutes(
+        RouteEdge[][] calldata routes
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         for (uint256 i = 0; i < routes.length; i++) {
             RouteEdge[] memory route = routes[i];
 
@@ -393,21 +389,19 @@ contract Exchange is ReentrancyGuard, AccessControl {
 
     /// @notice Set addresses to be no longer recognized as LP tokens
     /// @param edges list of LP tokens
-    function deleteLpToken(address[] calldata edges)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function deleteLpToken(
+        address[] calldata edges
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         for (uint256 i = 0; i < edges.length; i++) {
             delete lpTokens[edges[i]];
         }
     }
 
     /// @inheritdoc	AccessControl
-    function grantRole(bytes32 role, address account)
-        public
-        override
-        onlyRole(getRoleAdmin(role))
-    {
+    function grantRole(
+        bytes32 role,
+        address account
+    ) public override onlyRole(getRoleAdmin(role)) {
         require(account.isContract(), "Exchange: not contract");
         _grantRole(role, account);
     }
@@ -416,11 +410,10 @@ contract Exchange is ReentrancyGuard, AccessControl {
     /// @param from address of coin to start route from
     /// @param to address of route destination coin
     /// @return route containing liquidity pool addresses
-    function buildRoute(address from, address to)
-        public
-        view
-        returns (RouteEdge[] memory)
-    {
+    function buildRoute(
+        address from,
+        address to
+    ) public view returns (RouteEdge[] memory) {
         bool isFromMajorCoin = isMajorCoin[from];
         bool isToMajorCoin = isMajorCoin[to];
 
@@ -569,11 +562,10 @@ contract Exchange is ReentrancyGuard, AccessControl {
     /// @param from major coin to start route from
     /// @param to major coin that should be end of route
     /// @return Prebuilt route between major coins
-    function getMajorRoute(address from, address to)
-        external
-        view
-        returns (RouteEdge[] memory)
-    {
+    function getMajorRoute(
+        address from,
+        address to
+    ) external view returns (RouteEdge[] memory) {
         return internalMajorRoute[from][to];
     }
 
@@ -599,7 +591,7 @@ contract Exchange is ReentrancyGuard, AccessControl {
             // to/from adapter)
             bytes memory returnedData = adapter.functionDelegateCall(
                 abi.encodeWithSelector(
-                    executeSwapSigHash,
+                    EXECUTE_SWAP_SIG_HASH,
                     edge.pool,
                     edge.fromCoin,
                     edge.toCoin,
@@ -625,7 +617,12 @@ contract Exchange is ReentrancyGuard, AccessControl {
         // using delegatecall for gas savings (no need to transfer tokens
         // to adapter)
         bytes memory returnedData = adapter.functionDelegateCall(
-            abi.encodeWithSelector(enterPoolSigHash, edge.pool, from, amountIn)
+            abi.encodeWithSelector(
+                ENTER_POOL_SIG_HASH,
+                edge.pool,
+                from,
+                amountIn
+            )
         );
         // extract return value from delegatecall
         return abi.decode(returnedData, (uint256));
@@ -643,17 +640,15 @@ contract Exchange is ReentrancyGuard, AccessControl {
         // using delegatecall for gas savings (no need to transfer tokens
         // to adapter)
         bytes memory returnedData = adapter.functionDelegateCall(
-            abi.encodeWithSelector(exitPoolSigHash, edge.pool, to, amountIn)
+            abi.encodeWithSelector(EXIT_POOL_SIG_HASH, edge.pool, to, amountIn)
         );
         // extract return value from delegatecall
         return abi.decode(returnedData, (uint256));
     }
 
-    function reverseRouteEdge(RouteEdge memory route)
-        private
-        pure
-        returns (RouteEdge memory)
-    {
+    function reverseRouteEdge(
+        RouteEdge memory route
+    ) private pure returns (RouteEdge memory) {
         address cache = route.fromCoin;
         route.fromCoin = route.toCoin;
         route.toCoin = cache;

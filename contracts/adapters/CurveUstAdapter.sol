@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.11;
+pragma solidity ^0.8.11;
 
 import "./../interfaces/IExchangeAdapter.sol";
 import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
@@ -14,9 +14,10 @@ interface ICurveUst {
         uint256 min_dy
     ) external returns (uint256);
 
-    function add_liquidity(uint256[2] memory _amounts, uint256 _min_mint_amount)
-        external
-        returns (uint256);
+    function add_liquidity(
+        uint256[2] memory _amounts,
+        uint256 _min_mint_amount
+    ) external returns (uint256);
 
     function remove_liquidity_one_coin(
         uint256 _burn_amount,
@@ -26,8 +27,10 @@ interface ICurveUst {
 }
 
 interface ICurve3Crv {
-    function add_liquidity(uint256[3] memory amounts, uint256 min_mint_amount)
-        external;
+    function add_liquidity(
+        uint256[3] memory amounts,
+        uint256 min_mint_amount
+    ) external;
 
     function remove_liquidity_one_coin(
         uint256 _token_amount,
@@ -37,8 +40,9 @@ interface ICurve3Crv {
 }
 
 contract CurveUstAdapter {
-    address public constant fraxLp = 0x94e131324b6054c0D789b190b2dAC504e4361b53;
-    ICurve3Crv public constant pool3Crv =
+    address public constant FRAX_LP =
+        0x94e131324b6054c0D789b190b2dAC504e4361b53;
+    ICurve3Crv public constant POOL_3CRV =
         ICurve3Crv(0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7);
 
     function indexByUnderlyingCoin(address coin) public pure returns (int128) {
@@ -95,7 +99,7 @@ contract CurveUstAdapter {
         uint256[3] memory entryVector;
         entryVector[i - 2] = amount;
 
-        pool3Crv.add_liquidity(entryVector, 0);
+        POOL_3CRV.add_liquidity(entryVector, 0);
         return
             curve.add_liquidity([0, threeCrvToken.balanceOf(address(this))], 0);
     }
@@ -117,7 +121,7 @@ contract CurveUstAdapter {
         i = indexByUnderlyingCoin(toToken);
         require(i != 0, "CrvUstAdapter: can't exit");
         uint256 amount3Crv = curve.remove_liquidity_one_coin(amount, 1, 0);
-        pool3Crv.remove_liquidity_one_coin(amount3Crv, i - 2, 0);
+        POOL_3CRV.remove_liquidity_one_coin(amount3Crv, i - 2, 0);
 
         return IERC20(toToken).balanceOf(address(this));
     }

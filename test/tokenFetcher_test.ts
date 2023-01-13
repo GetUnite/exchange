@@ -2,7 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumberish } from "ethers";
 import { formatUnits, parseUnits } from "ethers/lib/utils";
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { TokenFetcher, IERC20 } from "../typechain";
 
 
@@ -14,11 +14,16 @@ describe("Token Fetcher Tests", async () => {
 
   before(async () => {
     const gnosisAddress = "0x1F020A4943EB57cd3b2213A66b355CB662Ea43C3"
-
-    await ethers.provider.send(
-      'hardhat_impersonateAccount',
-      [gnosisAddress]
-    );
+    await network.provider.request({
+      method: "hardhat_reset",
+      params: [{
+        forking: {
+          enabled: true,
+          jsonRpcUrl: process.env.MAINNET_FORKING_URL as string,
+          blockNumber: 15713655,
+        },
+      },],
+    });
 
     investor = await ethers.getSigner(gnosisAddress);
 

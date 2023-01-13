@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.11;
+pragma solidity ^0.8.11;
 
 import "./../interfaces/IExchangeAdapter.sol";
 import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
@@ -17,7 +17,7 @@ interface ICurveEURt {
     ) external returns (uint256);
 
     function add_liquidity(
-        uint256[4] memory amounts, 
+        uint256[4] memory amounts,
         uint256 min_mint_amount
     ) external;
 
@@ -29,12 +29,10 @@ interface ICurveEURt {
 }
 
 contract CurveEURtAdapter {
-    IERC20 public constant lpToken =
+    IERC20 public constant LP_TOKEN =
         IERC20(0x600743B1d8A96438bD46836fD34977a00293f6Aa); //Curve EURT-3Crv (crvEURTUSD)
 
-    function indexByCoin(
-        address coin
-    ) public pure returns (uint256) {
+    function indexByCoin(address coin) public pure returns (uint256) {
         // We are using the underlying coins for swaps.
         if (coin == 0x7BDF330f423Ea880FF95fC41A280fD5eCFD3D09f) return 1; // EURt polygon
         if (coin == 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063) return 2; // dai polygon
@@ -71,7 +69,7 @@ contract CurveEURtAdapter {
         require(i != 0, "EURtAdapter: can't enter");
         amounts[i - 1] = amount;
         curve.add_liquidity(amounts, 0);
-        return lpToken.balanceOf(address(this));
+        return LP_TOKEN.balanceOf(address(this));
     }
 
     // 0x9d756192  =>  exitPool(address,address,address,uint256)

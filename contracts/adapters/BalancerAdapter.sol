@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.11;
+pragma solidity ^0.8.11;
 
 import "./../interfaces/IExchangeAdapter.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
@@ -70,7 +70,9 @@ interface IBalancer is IBalancerStructs {
         JoinPoolRequest memory request
     ) external payable;
 
-    function getPoolTokens(bytes32 poolId)
+    function getPoolTokens(
+        bytes32 poolId
+    )
         external
         view
         returns (
@@ -92,7 +94,7 @@ interface IBalancerPool {
 }
 
 contract BalancerAdapter is IExchangeAdapter, IBalancerStructs {
-    IBalancer public constant balancer =
+    IBalancer public constant BALANCER =
         IBalancer(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
 
     // 0x6012856e  =>  executeSwap(address,address,address,uint256)
@@ -119,7 +121,7 @@ contract BalancerAdapter is IExchangeAdapter, IBalancerStructs {
             false
         );
 
-        return balancer.swap(singleSwap, funds, 0, type(uint256).max);
+        return BALANCER.swap(singleSwap, funds, 0, type(uint256).max);
     }
 
     // 0x73ec962e  =>  enterPool(address,address,uint256)
@@ -130,7 +132,7 @@ contract BalancerAdapter is IExchangeAdapter, IBalancerStructs {
     ) external payable returns (uint256) {
         bytes32 poolId = IBalancerPool(pool).getPoolId();
         address[] memory assets;
-        (assets, , ) = balancer.getPoolTokens(poolId);
+        (assets, , ) = BALANCER.getPoolTokens(poolId);
         uint256 assetsLength = assets.length;
         uint256[] memory maxAmountsIn = new uint256[](assetsLength);
         uint256[] memory amountsIn = new uint256[](assetsLength);
@@ -153,7 +155,7 @@ contract BalancerAdapter is IExchangeAdapter, IBalancerStructs {
             false
         );
 
-        balancer.joinPool(poolId, address(this), address(this), request);
+        BALANCER.joinPool(poolId, address(this), address(this), request);
 
         return IERC20(pool).balanceOf(address(this));
     }
@@ -166,7 +168,7 @@ contract BalancerAdapter is IExchangeAdapter, IBalancerStructs {
     ) external payable returns (uint256) {
         bytes32 poolId = IBalancerPool(pool).getPoolId();
         address[] memory assets;
-        (assets, , ) = balancer.getPoolTokens(poolId);
+        (assets, , ) = BALANCER.getPoolTokens(poolId);
         uint256 assetsLength = assets.length;
         uint256[] memory minAmountsOut = new uint256[](assetsLength);
         uint256 tokenIndex = 0;
@@ -188,7 +190,7 @@ contract BalancerAdapter is IExchangeAdapter, IBalancerStructs {
             false
         );
 
-        balancer.exitPool(
+        BALANCER.exitPool(
             poolId,
             address(this),
             payable(address(this)),

@@ -501,41 +501,35 @@ async function setupYCrvLpMinorCoin() {
 }
 
 let frxEthLp: IERC20Metadata;
-async function setupfrxEthLpMinorCoin() {
+let cvxCrvFraxLP: IERC20Metadata;
+async function setupCurveLpMinorCoins() {
 
     const frxEthPool = "0xa1f8a6807c402e4a15ef4eba36528a3fed24e577";
+    const cvxCrvFraxMetaPool = "0x5De4EF4879F4fe3bBADF2227D2aC5d0E2D76C895";
+
     frxEthLp = await ethers.getContractAt("IERC20Metadata", "0xf43211935c781d5ca1a41d2041f397b8a7366c7a");
+    cvxCrvFraxLP = await ethers.getContractAt("IERC20Metadata", "0x527331f3f550f6f85acfecab9cc0889180c6f1d5");
+
 
     const edge1: Edge = { swapProtocol: 17, pool: frxEthPool, fromCoin: frxEthLp.address, toCoin: weth.address };
-    const CurveFrxEthAdapter = await ethers.getContractFactory("CurveFrxEthAdapter");
-    const frxEthAdapter = await CurveFrxEthAdapter.deploy();
+    const edge2: Edge = { swapProtocol: 18, pool: cvxCrvFraxMetaPool, fromCoin: cvxCrvFraxLP.address, toCoin: usdc.address };
 
-    await exchange.registerAdapters([frxEthAdapter.address], [17]);
-    await exchange.createMinorCoinEdge([edge1]);
+    const CurveFrxEthAdapter = await ethers.getContractFactory("CurveFrxEthAdapter");
+    const CvxCrvFraxAdapter = await ethers.getContractFactory("CurvecvxCrvFraxAdapter");
+
+    const frxEthAdapter = await CurveFrxEthAdapter.deploy();
+    const cvxCrvFraxAdapter = await CvxCrvFraxAdapter.deploy();
+
+    await exchange.registerAdapters([frxEthAdapter.address, cvxCrvFraxAdapter.address], [17, 18]);
+    await exchange.createMinorCoinEdge([edge1, edge2]);
 
     customAmounts[frxEthLp.address] = parseUnits("0.1", await frxEthLp.decimals());
 
-    supportedCoinsList.push(frxEthLp);
-
-    console.log("Minor coin (frxEthLp) is set.")
-}
-
-let cvxCrvFraxLP: IERC20Metadata;
-async function setupcvxCrvFraxLPMinorCoin() {
-
-    const cvxCrvFraxMetaPool = "0x5De4EF4879F4fe3bBADF2227D2aC5d0E2D76C895";
-    cvxCrvFraxLP = await ethers.getContractAt("IERC20Metadata", "0x527331f3f550f6f85acfecab9cc0889180c6f1d5");
-
-    const edge1: Edge = { swapProtocol: 18, pool: cvxCrvFraxMetaPool, fromCoin: cvxCrvFraxLP.address, toCoin: usdc.address };
-    const CvxCrvFraxAdapter = await ethers.getContractFactory("CurvecvxCrvFraxAdapter");
-    const cvxCrvFraxAdapter = await CvxCrvFraxAdapter.deploy();
-
-    await exchange.registerAdapters([cvxCrvFraxAdapter.address], [18]);
-    await exchange.createMinorCoinEdge([edge1]);
-
+    supportedCoinsList.push(frxEthLp, cvxCrvFraxLP);
     supportedCoinsList.push(cvxCrvFraxLP);
 
-    console.log("Minor coin (cvxCrvFraxLP) is set.")
+    console.log("Minor coins (frxEthLp, cvxCrvFraxLP) is set.")
+
 }
 
 // TODO: add your new exchange setup function above this line. use example below
@@ -649,8 +643,7 @@ describe("Exchange (full setup operations)", async () => {
 
         await setupFraxDolaLpMinorCoin();     // adapter ids: 15
         await setupYCrvLpMinorCoin();         // adapter ids: 16
-        await setupfrxEthLpMinorCoin();       // adapter ids: 17
-        await setupcvxCrvFraxLPMinorCoin();   // adapter ids: 18
+        await setupCurveLpMinorCoins();       // adapter ids: 17, 18
         // TODO: add your new exchange setup function call above this line. add adapter
         // id comment after function call if you are registering any new adapters inside
         // 

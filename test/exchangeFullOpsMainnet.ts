@@ -444,7 +444,7 @@ async function setupFxsMinorCoin() {
 }
 
 async function setupUsdcWethMajorRouteShortcut() {
-    const encodedFeeData = "0x00000000000000000000000000000000000001F4";
+    const encodedFeeData = "0x00000000000000000000000000000000000001F4"; // fee tier 500 (0.05%)
     const swapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
 
     const wethUsdcRoute = { swapProtocol: 14, pool: encodedFeeData, fromCoin: weth.address, toCoin: usdc.address };
@@ -498,6 +498,37 @@ async function setupYCrvLpMinorCoin() {
     supportedCoinsList.push(ycrvLp);
 
     console.log("Minor coin (yCRV-f) is set.");
+}
+
+let frxEthLp: IERC20Metadata;
+let cvxCrvFraxLP: IERC20Metadata;
+async function setupFrxEthCrvLpCvxCrvFraxLpMinorCoins() {
+
+    const frxEthPool = "0xa1f8a6807c402e4a15ef4eba36528a3fed24e577";
+    const cvxCrvFraxMetaPool = "0x5De4EF4879F4fe3bBADF2227D2aC5d0E2D76C895";
+
+    frxEthLp = await ethers.getContractAt("IERC20Metadata", "0xf43211935c781d5ca1a41d2041f397b8a7366c7a");
+    cvxCrvFraxLP = await ethers.getContractAt("IERC20Metadata", "0x527331f3f550f6f85acfecab9cc0889180c6f1d5");
+
+
+    const edge1: Edge = { swapProtocol: 17, pool: frxEthPool, fromCoin: frxEthLp.address, toCoin: weth.address };
+    const edge2: Edge = { swapProtocol: 18, pool: cvxCrvFraxMetaPool, fromCoin: cvxCrvFraxLP.address, toCoin: usdc.address };
+
+    const CurveFrxEthAdapter = await ethers.getContractFactory("CurveFrxEthAdapter");
+    const CvxCrvFraxAdapter = await ethers.getContractFactory("CurvecvxCrvFraxAdapter");
+
+    const frxEthAdapter = await CurveFrxEthAdapter.deploy();
+    const cvxCrvFraxAdapter = await CvxCrvFraxAdapter.deploy();
+
+    await exchange.registerAdapters([frxEthAdapter.address, cvxCrvFraxAdapter.address], [17, 18]);
+    await exchange.createMinorCoinEdge([edge1, edge2]);
+
+    customAmounts[frxEthLp.address] = parseUnits("0.1", await frxEthLp.decimals());
+
+    supportedCoinsList.push(frxEthLp, cvxCrvFraxLP);
+
+    console.log("Minor coins (frxETHCRV, cvxCrvFrax-f) is set.")
+
 }
 
 // TODO: add your new exchange setup function above this line. use example below
@@ -564,7 +595,7 @@ async function setupYCrvLpMinorCoin() {
 //     console.log("Minor coin (EXCHANGE, ...) is set.")
 // }
 
-describe("Exchange (full setup operations)", async () => {
+describe("Exchange (full setup operations on Ethereum Mainnet)", async () => {
     before(async () => {
         await network.provider.request({
             method: "hardhat_reset",
@@ -588,18 +619,18 @@ describe("Exchange (full setup operations)", async () => {
         );
         console.log("Clean Exchange contract deployed, setting up routes...\n");
         // adaprter creations:
-        await setupMajorCoins();              // adapter ids: 1, 2
-        await setup3CrvMinorCoin();           // adapter ids: 3
-        await setupCvxCrvMinorCoins();        // adapter ids: 4, 5
-        await setupUstMinorCoin();            // adapter ids: 6
-        await setupRethMinorCoin();           // adapter ids: 7      (Balancer)
-        await setupAngleSpellLdoMinorCoins(); // adapter ids: 8      (UniswapV2)
-        await setupFraxUsdcLpMinorCoin();     // adapter ids: 9
-        await setupStEthLpMinorCoin();        // adapter ids: 10
-        await setupEurosMinorCoins();         // adapter ids: 11, 12
-        await setupCvxEthLpMinorCoin();       // adapter ids: 13
+        await setupMajorCoins();                              // adapter ids: 1, 2
+        await setup3CrvMinorCoin();                           // adapter ids: 3
+        await setupCvxCrvMinorCoins();                        // adapter ids: 4, 5
+        await setupUstMinorCoin();                            // adapter ids: 6
+        await setupRethMinorCoin();                           // adapter ids: 7      (Balancer)
+        await setupAngleSpellLdoMinorCoins();                 // adapter ids: 8      (UniswapV2)
+        await setupFraxUsdcLpMinorCoin();                     // adapter ids: 9
+        await setupStEthLpMinorCoin();                        // adapter ids: 10
+        await setupEurosMinorCoins();                         // adapter ids: 11, 12
+        await setupCvxEthLpMinorCoin();                       // adapter ids: 13
         await setupWbtcMinorCoin();
-        await setupAlluoUniswapMinorCoin();   // adapter ids: 14     (UniswapV3)
+        await setupAlluoUniswapMinorCoin();                   // adapter ids: 14     (UniswapV3)
         await setupFxsMinorCoin();
 
         // as UniswapV3 adapter was added, and USDC-WETH pool on UniswapV3 has
@@ -609,8 +640,9 @@ describe("Exchange (full setup operations)", async () => {
         // require USDC-WETH major route 
         await setupUsdcWethMajorRouteShortcut();
 
-        await setupFraxDolaLpMinorCoin();     // adapter ids: 15
-        await setupYCrvLpMinorCoin();         // adapter ids: 16
+        await setupFraxDolaLpMinorCoin();                     // adapter ids: 15
+        await setupYCrvLpMinorCoin();                         // adapter ids: 16
+        await setupFrxEthCrvLpCvxCrvFraxLpMinorCoins();       // adapter ids: 17, 18
         // TODO: add your new exchange setup function call above this line. add adapter
         // id comment after function call if you are registering any new adapters inside
         // 

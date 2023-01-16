@@ -16,6 +16,7 @@ const zeroAddr = constants.AddressZero;
 const nativeEth = zeroAddr;
 let signers: SignerWithAddress[];
 let exchange: Exchange;
+let customAmounts: { [key: string]: BigNumber } = {};
 
 async function testSwap(fromAddress: string, toAddress: string, amount: BigNumberish) {
     if (fromAddress == zeroAddr || fromAddress == nativeEth) {
@@ -87,8 +88,16 @@ async function main() {
     const fxs = await ethers.getContractAt("IERC20Metadata", "0x3432B6A60D23Ca0dFCa7761B7ab56459D9C964D0");
     const fraxBP = await ethers.getContractAt("IERC20Metadata", "0xe57180685e3348589e9521aa53af0bcd497e884d");
     const ycrvLp = await ethers.getContractAt("IERC20Metadata", "0x453d92c7d4263201c69aacfaf589ed14202d83a4");
+    const frxEthLp = await ethers.getContractAt("IERC20Metadata", "0xf43211935c781d5ca1a41d2041f397b8a7366c7a");
+    const cvxCrvFraxLP = await ethers.getContractAt("IERC20Metadata", "0x527331f3f550f6f85acfecab9cc0889180c6f1d5");
 
-    const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx, alluo, weth, reth, ldo, spell, angle, eurs, ageur, eurt, stEthEth, fraxUsdc, cvxEth, wbtc, fxs, fraxBP, ycrvLp];
+    customAmounts[reth.address] = parseUnits("0.1", await reth.decimals());
+    customAmounts[spell.address] = parseUnits("1000", await spell.decimals());
+    customAmounts[stEthEth.address] = parseUnits("0.1", await stEthEth.decimals());
+    customAmounts[wbtc.address] = parseUnits("0.001", await wbtc.decimals());
+    customAmounts[frxEthLp.address] = parseUnits("0.1", await frxEthLp.decimals());
+
+    const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx, alluo, weth, reth, ldo, spell, angle, eurs, ageur, eurt, stEthEth, fraxUsdc, cvxEth, wbtc, fxs, fraxBP, ycrvLp, frxEthLp, cvxCrvFraxLP];
     await weth.deposit({ value: parseEther("1000.0") });
 
     // get all supported coins - swap ETH for all coins
@@ -106,14 +115,10 @@ async function main() {
 
             const coinIn = supportedCoinList[i];
             const coinOut = supportedCoinList[j];
-            let amount: BigNumber = coinIn == reth ?
-                parseUnits("0.1", await coinIn.decimals()) :
-                (coinIn == spell ?
-                    parseUnits("1000", await coinIn.decimals())
-                    : (coinIn == wbtc ?
-                        parseUnits("0.001", await coinIn.decimals())
-                        : (coinIn == stEthEth ? parseUnits("0.1", await coinIn.decimals()) : parseUnits("1", await coinIn.decimals())))
-                );
+
+            const amount = customAmounts[coinIn.address] == null ?
+                parseUnits("1", await coinIn.decimals()) :
+                customAmounts[coinIn.address];
             await testSwap(coinIn.address, coinOut.address, amount);
         }
         console.log();

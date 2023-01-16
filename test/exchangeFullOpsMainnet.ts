@@ -444,7 +444,7 @@ async function setupFxsMinorCoin() {
 }
 
 async function setupUsdcWethMajorRouteShortcut() {
-    const encodedFeeData = "0x00000000000000000000000000000000000001F4";
+    const encodedFeeData = "0x00000000000000000000000000000000000001F4"; // fee tier 500 (0.05%)
     const swapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
 
     const wethUsdcRoute = { swapProtocol: 14, pool: encodedFeeData, fromCoin: weth.address, toCoin: usdc.address };
@@ -595,7 +595,7 @@ async function setupCurveLpMinorCoins() {
 //     console.log("Minor coin (EXCHANGE, ...) is set.")
 // }
 
-describe("Exchange (full setup operations)", async () => {
+describe("Exchange (full setup operations on Ethereum Mainnet)", async () => {
     before(async () => {
         await network.provider.request({
             method: "hardhat_reset",

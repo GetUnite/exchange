@@ -397,6 +397,14 @@ contract Exchange is ReentrancyGuard, AccessControl {
         }
     }
 
+    /// @notice Set addresses of wrapped native token of blockchain where exchange is deployed
+    /// @param token wrapped token address
+    function setWrappedNativeToken(
+        address token
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        wrappedEther = IWrappedEther(token);
+    }
+
     /// @inheritdoc	AccessControl
     function grantRole(
         bytes32 role,

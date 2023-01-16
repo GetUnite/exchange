@@ -90,7 +90,7 @@ async function main() {
     const frxEthLp = await ethers.getContractAt("IERC20Metadata", "0xf43211935c781d5ca1a41d2041f397b8a7366c7a");
     const cvxCrvFraxLP = await ethers.getContractAt("IERC20Metadata", "0x527331f3f550f6f85acfecab9cc0889180c6f1d5");
 
-    const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx, alluo, weth, reth, ldo, spell, angle, eurs, ageur, eurt, stEthEth, fraxUsdc, cvxEth, wbtc, fxs, fraxBP, cvxCrvFrax, ycrvLp, frxEthLp, cvxCrvFraxLP];
+    const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx, alluo, weth, reth, ldo, spell, angle, eurs, ageur, eurt, stEthEth, fraxUsdc, cvxEth, wbtc, fxs, fraxBP, ycrvLp, frxEthLp, cvxCrvFraxLP];
     await weth.deposit({ value: parseEther("1000.0") });
 
     // get all supported coins - swap ETH for all coins

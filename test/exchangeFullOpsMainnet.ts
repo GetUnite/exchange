@@ -539,8 +539,7 @@ async function setupJpegMinorCoin() {
 
     const jpegEdge = { swapProtocol: 8, pool: jpegPool, fromCoin: jpegToken.address, toCoin: weth.address };
 
-    const tx = await exchange.createMinorCoinEdge([jpegEdge]);
-    console.log(tx.data);
+    await exchange.createMinorCoinEdge([jpegEdge]);
 
     customAmounts[jpegToken.address] = parseUnits("1000", await jpegToken.decimals());
     supportedCoinsList.push(jpegToken);

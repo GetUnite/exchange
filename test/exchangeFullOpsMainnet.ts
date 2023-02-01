@@ -531,6 +531,23 @@ async function setupFrxEthCrvLpCvxCrvFraxLpMinorCoins() {
 
 }
 
+let jpegToken: IERC20Metadata;
+async function setupJpegMinorCoin() {
+    const jpegPool = "0xdB06a76733528761Eda47d356647297bC35a98BD";
+
+    jpegToken = await ethers.getContractAt("IERC20Metadata", "0xE80C0cd204D654CEbe8dd64A4857cAb6Be8345a3")
+
+    const jpegEdge = { swapProtocol: 8, pool: jpegPool, fromCoin: jpegToken.address, toCoin: weth.address };
+
+    const tx = await exchange.createMinorCoinEdge([jpegEdge]);
+    console.log(tx.data);
+
+    customAmounts[jpegToken.address] = parseUnits("1000", await jpegToken.decimals());
+    supportedCoinsList.push(jpegToken);
+
+    console.log("Minor coin (JPEG) is set.");
+}
+
 // TODO: add your new exchange setup function above this line. use example below
 //
 // always specify in function name if you are adding new minor coin, doing some
@@ -632,17 +649,17 @@ describe("Exchange (full setup operations on Ethereum Mainnet)", async () => {
         await setupWbtcMinorCoin();
         await setupAlluoUniswapMinorCoin();                   // adapter ids: 14     (UniswapV3)
         await setupFxsMinorCoin();
-
         // as UniswapV3 adapter was added, and USDC-WETH pool on UniswapV3 has
         // significant amount of liquidity, we decided to make internal USDC-WETH
         // major route to though that pool directly, instead of making 2 step exchange
         // USDC-USDT-WETH. This shortcut saves a lot of gas on all exchanges that
         // require USDC-WETH major route 
         await setupUsdcWethMajorRouteShortcut();
-
         await setupFraxDolaLpMinorCoin();                     // adapter ids: 15
         await setupYCrvLpMinorCoin();                         // adapter ids: 16
         await setupFrxEthCrvLpCvxCrvFraxLpMinorCoins();       // adapter ids: 17, 18
+        await setupJpegMinorCoin();
+
         // TODO: add your new exchange setup function call above this line. add adapter
         // id comment after function call if you are registering any new adapters inside
         // 

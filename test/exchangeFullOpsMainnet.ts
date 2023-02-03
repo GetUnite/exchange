@@ -547,6 +547,61 @@ async function setupJpegMinorCoin() {
     console.log("Minor coin (JPEG) is set.");
 }
 
+async function setWbtcAsMajorCoin() {
+    const renbtcAddress = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46";
+    const fraxPoolAddress = "0xd632f22692FaC7611d2AA1C0D552930D43CAEd3B";
+
+    let wbtcWethRoute: Route, wbtcUsdtRoute: Route, wbtcUsdcRoute: Route, wbtcDaiRoute: Route, wbtcFraxRoute: Route;
+    let wethWbtcRoute: Route, usdtWbtcRoute: Route, usdcWbtcRoute: Route, daiWbtcRoute: Route, fraxWbtcRoute: Route;
+
+    wbtcWethRoute = [
+        { swapProtocol: 2, pool: renbtcAddress, fromCoin: wbtc.address, toCoin: weth.address }
+    ];
+    wethWbtcRoute = [
+        { swapProtocol: 2, pool: renbtcAddress, fromCoin: weth.address, toCoin: wbtc.address }
+    ];
+    wbtcUsdtRoute = [
+        { swapProtocol: 2, pool: renbtcAddress, fromCoin: wbtc.address, toCoin: usdt.address }
+    ];
+    usdtWbtcRoute = [
+        { swapProtocol: 2, pool: renbtcAddress, fromCoin: usdt.address, toCoin: wbtc.address }
+    ];
+    wbtcUsdcRoute = [
+        { swapProtocol: 2, pool: renbtcAddress, fromCoin: wbtc.address, toCoin: usdt.address },
+        { swapProtocol: 1, pool: fraxPoolAddress, fromCoin: usdt.address, toCoin: usdc.address },
+    ];
+    usdcWbtcRoute = [
+        { swapProtocol: 1, pool: fraxPoolAddress, fromCoin: usdc.address, toCoin: usdt.address },
+        { swapProtocol: 2, pool: renbtcAddress, fromCoin: usdt.address, toCoin: wbtc.address },
+    ];
+    wbtcDaiRoute = [
+        { swapProtocol: 2, pool: renbtcAddress, fromCoin: wbtc.address, toCoin: usdt.address },
+        { swapProtocol: 1, pool: fraxPoolAddress, fromCoin: usdt.address, toCoin: dai.address },
+    ];
+    daiWbtcRoute = [
+        { swapProtocol: 1, pool: fraxPoolAddress, fromCoin: dai.address, toCoin: usdt.address },
+        { swapProtocol: 2, pool: renbtcAddress, fromCoin: usdt.address, toCoin: wbtc.address },
+    ];
+    fraxWbtcRoute = [
+        { swapProtocol: 1, pool: fraxPoolAddress, fromCoin: frax.address, toCoin: usdt.address },
+        { swapProtocol: 2, pool: renbtcAddress, fromCoin: usdt.address, toCoin: wbtc.address },
+    ];
+    wbtcFraxRoute = [
+        { swapProtocol: 2, pool: renbtcAddress, fromCoin: wbtc.address, toCoin: usdt.address },
+        { swapProtocol: 1, pool: fraxPoolAddress, fromCoin: usdt.address, toCoin: frax.address },
+    ];
+
+    const majorRoutes = [
+        wbtcWethRoute, wbtcUsdtRoute, wbtcUsdcRoute, wbtcDaiRoute, wbtcFraxRoute,
+        wethWbtcRoute, usdtWbtcRoute, usdcWbtcRoute, daiWbtcRoute, fraxWbtcRoute
+    ];
+
+    await exchange.deleteMinorCoinEdge([weth.address]);
+    await exchange.createInternalMajorRoutes(majorRoutes);
+
+    console.log("Set WBTC as a major coin.");
+}
+
 // TODO: add your new exchange setup function above this line. use example below
 //
 // always specify in function name if you are adding new minor coin, doing some
@@ -658,6 +713,7 @@ describe("Exchange (full setup operations on Ethereum Mainnet)", async () => {
         await setupYCrvLpMinorCoin();                         // adapter ids: 16
         await setupFrxEthCrvLpCvxCrvFraxLpMinorCoins();       // adapter ids: 17, 18
         await setupJpegMinorCoin();
+        await setWbtcAsMajorCoin();
 
         // TODO: add your new exchange setup function call above this line. add adapter
         // id comment after function call if you are registering any new adapters inside

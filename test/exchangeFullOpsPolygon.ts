@@ -53,17 +53,21 @@ async function testSwap(fromAddress: string, toAddress: string, amount: BigNumbe
 
 let usdt: IERC20Metadata,
     usdc: IERC20Metadata,
-    dai: IERC20Metadata;
+    dai: IERC20Metadata,
+    eurt: IERC20Metadata;
 async function setupMajorCoins() {
     const PolygonCurveEURtPool = "0x225fb4176f0e20cdb66b4a3df70ca3063281e855";
 
     usdt = await ethers.getContractAt("IERC20Metadata", "0xc2132D05D31c914a87C6611C10748AEb04B58e8F");
     usdc = await ethers.getContractAt("IERC20Metadata", "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174");
     dai = await ethers.getContractAt("IERC20Metadata", "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063");
+    eurt = await ethers.getContractAt("IERC20Metadata", "0x7BDF330f423Ea880FF95fC41A280fD5eCFD3D09f");
 
     let usdtDaiRoute: Route, usdtUsdcRoute: Route,
         usdcDaiRoute: Route, usdcUsdtRoute: Route,
-        daiUsdcRoute: Route, daiUsdtRoute: Route
+        daiUsdcRoute: Route, daiUsdtRoute: Route,
+        daiEurtRoute: Route, usdcEurtRoute: Route, usdtEurtRoute: Route,
+        eurtDaiRoute: Route, eurtUsdcRoute: Route, eurtUsdtRoute: Route;
 
     usdtDaiRoute = [
         // USDT - DAI
@@ -89,6 +93,30 @@ async function setupMajorCoins() {
         // DAI - USDT
         { swapProtocol: 1, pool: PolygonCurveEURtPool, fromCoin: dai.address, toCoin: usdt.address }
     ];
+    daiEurtRoute = [
+        // DAI - EURT
+        { swapProtocol: 1, pool: PolygonCurveEURtPool, fromCoin: dai.address, toCoin: eurt.address }
+    ];
+    usdcEurtRoute = [
+        // USDC - EURT
+        { swapProtocol: 1, pool: PolygonCurveEURtPool, fromCoin: usdc.address, toCoin: eurt.address }
+    ];
+    usdtEurtRoute = [
+        // USDT - EURT
+        { swapProtocol: 1, pool: PolygonCurveEURtPool, fromCoin: usdt.address, toCoin: eurt.address }
+    ];
+    eurtDaiRoute = [
+        // EURT - DAI
+        { swapProtocol: 1, pool: PolygonCurveEURtPool, fromCoin: eurt.address, toCoin: dai.address }
+    ];
+    eurtUsdcRoute = [
+        // EURT - USDC
+        { swapProtocol: 1, pool: PolygonCurveEURtPool, fromCoin: eurt.address, toCoin: usdc.address }
+    ];
+    eurtUsdtRoute = [
+        // EURT - USDT
+        { swapProtocol: 1, pool: PolygonCurveEURtPool, fromCoin: eurt.address, toCoin: usdt.address }
+    ];
 
     const PolygonCurve = await ethers.getContractFactory("CurveEURtAdapter");
     const polygonCurveAdapter = await PolygonCurve.deploy()
@@ -97,27 +125,15 @@ async function setupMajorCoins() {
         usdtDaiRoute, usdtUsdcRoute,
         usdcDaiRoute, usdcUsdtRoute,
         daiUsdcRoute, daiUsdtRoute,
+        daiEurtRoute, usdcEurtRoute, usdtEurtRoute,
+        eurtDaiRoute, eurtUsdcRoute, eurtUsdtRoute
     ];
     await exchange.createInternalMajorRoutes(routes);
     await exchange.registerAdapters([polygonCurveAdapter.address], [1])
 
-    supportedCoinsList.push(dai, usdc, usdt);
+    supportedCoinsList.push(dai, usdc, usdt, eurt);
 
-    console.log("Major coins (DAI, USDC, USDT) are set.");
-}
-
-let eurt: IERC20Metadata;
-async function setupEurtMinorCoin() {
-    const PolygonCurveEURtPool = "0x225fb4176f0e20cdb66b4a3df70ca3063281e855";
-
-    eurt = await ethers.getContractAt("IERC20Metadata", "0x7BDF330f423Ea880FF95fC41A280fD5eCFD3D09f");
-
-    const eurtEdge = { swapProtocol: 1, pool: PolygonCurveEURtPool, fromCoin: eurt.address, toCoin: usdc.address };
-
-    await exchange.createMinorCoinEdge([eurtEdge])
-
-    supportedCoinsList.push(eurt); 
-    console.log("Minor coin (EURT) is set.");
+    console.log("Major coins (DAI, USDC, USDT, EURT) are set.");
 }
 
 let wmatic: IWrappedEther;
@@ -134,8 +150,33 @@ async function setupWmaticMinorCoin() {
     await exchange.registerAdapters([uniV3Adapter.address], [2]);
     await exchange.createMinorCoinEdge([wmaticUsdcRoute]);
 
-    supportedCoinsList.push(wmatic); 
+    supportedCoinsList.push(wmatic);
     console.log("Minor coin (WMATIC) is set.");
+}
+
+let eurs: IERC20Metadata,
+    par: IERC20Metadata,
+    jeur: IERC20Metadata;
+async function setupEursParJeurMinorCoins() {
+    const pool = "0xAd326c253A84e9805559b73A08724e11E49ca651";
+
+    eurs = await ethers.getContractAt("IERC20Metadata", "0xE111178A87A3BFf0c8d18DECBa5798827539Ae99");
+    par = await ethers.getContractAt("IERC20Metadata", "0xE2Aa7db6dA1dAE97C5f5C6914d285fBfCC32A128");
+    jeur = await ethers.getContractAt("IERC20Metadata", "0x4e3Decbb3645551B8A19f0eA1678079FCB33fB4c");
+
+    const eursEurtRoute = { swapProtocol: 3, pool: pool, fromCoin: eurs.address, toCoin: eurt.address };
+    const parEurtRoute = { swapProtocol: 3, pool: pool, fromCoin: par.address, toCoin: eurt.address };
+    const jeurJeutRoute = { swapProtocol: 3, pool: pool, fromCoin: jeur.address, toCoin: eurt.address };
+
+    const factory = await ethers.getContractFactory("PolygonCurve4EURAdapter");
+    const adapter = await factory.deploy();
+
+    await exchange.registerAdapters([adapter.address], [3]);
+    await exchange.createMinorCoinEdge([eursEurtRoute, parEurtRoute, jeurJeutRoute]);
+
+    supportedCoinsList.push(eurs, par, jeur);
+
+    console.log("Minor coins (EURS, PAR, JEUR) is set.");
 }
 
 // TODO: add your new exchange setup function above this line. use example below
@@ -231,9 +272,9 @@ describe("Exchange (full setup operations on Polygon Mainnet)", async () => {
 
         console.log("Clean Exchange contract deployed, setting up routes...\n");
         // adaprter creations:
-        await setupMajorCoins();      // adapter ids: 1
-        await setupEurtMinorCoin();
-        await setupWmaticMinorCoin(); // adapter ids: 2 (UniswapV3)
+        await setupMajorCoins();            // adapter ids: 1
+        await setupWmaticMinorCoin();       // adapter ids: 2 (UniswapV3)
+        await setupEursParJeurMinorCoins(); // adapter ids: 3
 
         // TODO: add your new exchange setup function call above this line. add adapter
         // id comment after function call if you are registering any new adapters inside

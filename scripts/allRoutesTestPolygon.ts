@@ -75,9 +75,9 @@ async function main() {
     const eurs = await ethers.getContractAt("IERC20Metadata", "0xE111178A87A3BFf0c8d18DECBa5798827539Ae99");
     const par = await ethers.getContractAt("IERC20Metadata", "0xE2Aa7db6dA1dAE97C5f5C6914d285fBfCC32A128");
     const jeur = await ethers.getContractAt("IERC20Metadata", "0x4e3Decbb3645551B8A19f0eA1678079FCB33fB4c");
+    const agEur = await ethers.getContractAt("IERC20Metadata", "0xE0B52e49357Fd4DAf2c15e02058DCE6BC0057db4");
 
-
-    const supportedCoinList = [dai, usdc, usdt, eurt, eurs, par, jeur, wmatic];
+    const supportedCoinList = [dai, usdc, usdt, eurt, eurs, par, jeur, wmatic, agEur];
     await wmatic.deposit({ value: parseEther("1500000.0") });
 
     // get all supported coins - swap ETH for all coins

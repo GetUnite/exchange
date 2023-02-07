@@ -179,6 +179,22 @@ async function setupEursParJeurMinorCoins() {
     console.log("Minor coins (EURS, PAR, JEUR) is set.");
 }
 
+let agEur: IERC20Metadata;
+async function setupAgEurMinorCoin() {
+    const swapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
+    const encodedFeeData = "0x0000000000000000000000000000000000000064"; // fee tier 100 (0.01%)
+
+    agEur = await ethers.getContractAt("IERC20Metadata", "0xE0B52e49357Fd4DAf2c15e02058DCE6BC0057db4")
+
+    const agEurEdge = { swapProtocol: 2, pool: encodedFeeData, fromCoin: agEur.address, toCoin: usdc.address };
+
+    await exchange.createApproval([agEur.address], [swapRouter]);
+    await exchange.createMinorCoinEdge([agEurEdge]);
+
+    supportedCoinsList.push(agEur);
+    console.log("Minor coin (agEUR) is set.");
+}
+
 // TODO: add your new exchange setup function above this line. use example below
 //
 // always specify in function name if you are adding new minor coin, doing some
@@ -275,6 +291,7 @@ describe("Exchange (full setup operations on Polygon Mainnet)", async () => {
         await setupMajorCoins();            // adapter ids: 1
         await setupWmaticMinorCoin();       // adapter ids: 2 (UniswapV3)
         await setupEursParJeurMinorCoins(); // adapter ids: 3
+        await setupAgEurMinorCoin();
 
         // TODO: add your new exchange setup function call above this line. add adapter
         // id comment after function call if you are registering any new adapters inside

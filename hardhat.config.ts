@@ -35,6 +35,13 @@ const config: HardhatUserConfig = {
         mnemonic: process.env.MNEMONIC,
       },
     },
+    optimism: {
+      url: process.env.OPTIMISM_URL,
+      gasPrice: "auto",
+      accounts: {
+        mnemonic: process.env.MNEMONIC,
+      },
+    },
     rinkeby: {
       url: process.env.RINKEBY_URL,
       gasPrice: "auto",
@@ -71,6 +78,7 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
+    // apiKey: process.env.OPTIMISM_API_KEY,
     // apiKey: process.env.POLYGONSCAN_API_KEY,
   },
   mocha: {

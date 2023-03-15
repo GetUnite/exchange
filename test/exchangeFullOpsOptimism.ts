@@ -54,17 +54,21 @@ let weth: IWrappedEther,
     usdc: IERC20Metadata,
     usdt: IERC20Metadata,
     dai: IERC20Metadata,
-    wbtc: IERC20Metadata;
+    wbtc: IERC20Metadata,
+    frax: IERC20Metadata;
 async function setupMajorCoins() {
     const wethUsdcPool = "0x79c912FEF520be002c2B6e57EC4324e260f38E50";
     const threeCrvPool = "0x1337BedC9D22ecbe766dF105c9623922A27963EC";
-    const encodedFeeData = "0x0000000000000000000000000000000000000bb8"; // fee tier 3000 (0.3%)
+    const encodedFeeData3 = "0x0000000000000000000000000000000000000bb8"; // fee tier 3000 (0.3%)
+    const encodedFeeData05 = "0x00000000000000000000000000000000000001F4"; // fee tier 500 (0.05%)
+
     const swapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
 
     usdc = await ethers.getContractAt("IERC20Metadata", "0x7F5c764cBc14f9669B88837ca1490cCa17c31607");
     usdt = await ethers.getContractAt("IERC20Metadata", "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58");
     dai = await ethers.getContractAt("IERC20Metadata", "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1");
     wbtc = await ethers.getContractAt("IERC20Metadata", "0x68f180fcCe6836688e9084f035309E29Bf0A2095");
+    frax = await ethers.getContractAt("IERC20Metadata", "0x2E3D870790dC77A83DD1d18184Acc7439A53f475");
 
     let usdcWethRoute: Route, wethUsdcRoute: Route,
         usdcUsdtRoute: Route, usdtUsdcRoute: Route,
@@ -74,41 +78,84 @@ async function setupMajorCoins() {
         wethUsdtRoute: Route, usdtWethRoute: Route,
 
         wbtcWethRoute: Route, wbtcUsdcRoute: Route, wbtcUsdtRoute: Route, wbtcDaiRoute: Route,
-        wethWbtcRoute: Route, usdcWbtcRoute: Route, usdtWbtcRoute: Route, daiWbtcRoute: Route;
+        wethWbtcRoute: Route, usdcWbtcRoute: Route, usdtWbtcRoute: Route, daiWbtcRoute: Route,
 
+        fraxWethRoute: Route, fraxUsdcRoute: Route, fraxUsdtRoute: Route, fraxDaiRoute: Route, fraxWbtcRoute: Route,
+        wethFraxRoute: Route, usdcFraxRoute: Route, usdtFraxRoute: Route, daiFraxRoute: Route, wbtcFraxRoute: Route;
+
+    fraxUsdcRoute = [
+        { swapProtocol: 3, pool: encodedFeeData05, fromCoin: frax.address, toCoin: usdc.address }
+    ];
+    usdcFraxRoute = [
+        { swapProtocol: 3, pool: encodedFeeData05, fromCoin: usdc.address, toCoin: frax.address }
+    ];
+    fraxWethRoute = [
+        { swapProtocol: 3, pool: encodedFeeData05, fromCoin: frax.address, toCoin: usdc.address },
+        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address },
+    ]
+    wethFraxRoute = [
+        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address },
+        { swapProtocol: 3, pool: encodedFeeData05, fromCoin: usdc.address, toCoin: frax.address }
+    ];
+    fraxUsdtRoute = [
+        { swapProtocol: 3, pool: encodedFeeData05, fromCoin: frax.address, toCoin: usdc.address },
+        { swapProtocol: 2, pool: threeCrvPool, fromCoin: usdc.address, toCoin: usdt.address }
+    ];
+    usdtFraxRoute = [
+        { swapProtocol: 2, pool: threeCrvPool, fromCoin: usdt.address, toCoin: usdc.address },
+        { swapProtocol: 3, pool: encodedFeeData05, fromCoin: usdc.address, toCoin: frax.address }
+    ];
+    fraxDaiRoute = [
+        { swapProtocol: 3, pool: encodedFeeData05, fromCoin: frax.address, toCoin: usdc.address },
+        { swapProtocol: 2, pool: threeCrvPool, fromCoin: usdc.address, toCoin: dai.address }
+    ];
+    daiFraxRoute = [
+        { swapProtocol: 2, pool: threeCrvPool, fromCoin: dai.address, toCoin: usdc.address },
+        { swapProtocol: 3, pool: encodedFeeData05, fromCoin: usdc.address, toCoin: frax.address }
+    ];
+    fraxWbtcRoute = [
+        { swapProtocol: 3, pool: encodedFeeData05, fromCoin: frax.address, toCoin: usdc.address },
+        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address },
+        { swapProtocol: 3, pool: encodedFeeData3, fromCoin: weth.address, toCoin: wbtc.address }
+    ];
+    wbtcFraxRoute = [
+        { swapProtocol: 3, pool: encodedFeeData3, fromCoin: wbtc.address, toCoin: weth.address },
+        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address },
+        { swapProtocol: 3, pool: encodedFeeData05, fromCoin: usdc.address, toCoin: frax.address }
+    ];
     wbtcWethRoute = [
-        { swapProtocol: 3, pool: encodedFeeData, fromCoin: wbtc.address, toCoin: weth.address }
+        { swapProtocol: 3, pool: encodedFeeData3, fromCoin: wbtc.address, toCoin: weth.address }
     ];
     wethWbtcRoute = [
-        { swapProtocol: 3, pool: encodedFeeData, fromCoin: weth.address, toCoin: wbtc.address }
+        { swapProtocol: 3, pool: encodedFeeData3, fromCoin: weth.address, toCoin: wbtc.address }
     ];
     wbtcUsdcRoute = [
-        { swapProtocol: 3, pool: encodedFeeData, fromCoin: wbtc.address, toCoin: weth.address },
+        { swapProtocol: 3, pool: encodedFeeData3, fromCoin: wbtc.address, toCoin: weth.address },
         { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address }
     ];
     usdcWbtcRoute = [
         { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address },
-        { swapProtocol: 3, pool: encodedFeeData, fromCoin: weth.address, toCoin: wbtc.address }
+        { swapProtocol: 3, pool: encodedFeeData3, fromCoin: weth.address, toCoin: wbtc.address }
     ];
     wbtcUsdtRoute = [
-        { swapProtocol: 3, pool: encodedFeeData, fromCoin: wbtc.address, toCoin: weth.address },
+        { swapProtocol: 3, pool: encodedFeeData3, fromCoin: wbtc.address, toCoin: weth.address },
         { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address },
         { swapProtocol: 2, pool: threeCrvPool, fromCoin: usdc.address, toCoin: usdt.address }
     ];
     usdtWbtcRoute = [
         { swapProtocol: 2, pool: threeCrvPool, fromCoin: usdt.address, toCoin: usdc.address },
         { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address },
-        { swapProtocol: 3, pool: encodedFeeData, fromCoin: weth.address, toCoin: wbtc.address }
+        { swapProtocol: 3, pool: encodedFeeData3, fromCoin: weth.address, toCoin: wbtc.address }
     ];
     wbtcDaiRoute = [
-        { swapProtocol: 3, pool: encodedFeeData, fromCoin: wbtc.address, toCoin: weth.address },
+        { swapProtocol: 3, pool: encodedFeeData3, fromCoin: wbtc.address, toCoin: weth.address },
         { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address },
         { swapProtocol: 2, pool: threeCrvPool, fromCoin: usdc.address, toCoin: dai.address }
     ];
     daiWbtcRoute = [
         { swapProtocol: 2, pool: threeCrvPool, fromCoin: dai.address, toCoin: usdc.address },
         { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address },
-        { swapProtocol: 3, pool: encodedFeeData, fromCoin: weth.address, toCoin: wbtc.address }
+        { swapProtocol: 3, pool: encodedFeeData3, fromCoin: weth.address, toCoin: wbtc.address }
     ];
     usdcWethRoute = [
         { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address }
@@ -166,17 +213,19 @@ async function setupMajorCoins() {
         daiWethRoute, wethDaiRoute,
         wethUsdtRoute, usdtWethRoute,
         wbtcWethRoute, wbtcUsdcRoute, wbtcUsdtRoute, wbtcDaiRoute,
-        wethWbtcRoute, usdcWbtcRoute, usdtWbtcRoute, daiWbtcRoute
+        wethWbtcRoute, usdcWbtcRoute, usdtWbtcRoute, daiWbtcRoute,
+        fraxWethRoute, fraxUsdcRoute, fraxUsdtRoute, fraxDaiRoute, fraxWbtcRoute,
+        wethFraxRoute, usdcFraxRoute, usdtFraxRoute, daiFraxRoute, wbtcFraxRoute
     ];
     await exchange.createInternalMajorRoutes(routes);
     await exchange.registerAdapters([velodromeAdapter.address, optimism3crvAdapter.address, uniV3Adapter.address], [1, 2, 3]);
-    await exchange.createApproval([weth.address, wbtc.address], [swapRouter, swapRouter])
+    await exchange.createApproval([weth.address, wbtc.address, usdc.address, frax.address], [swapRouter, swapRouter, swapRouter, swapRouter])
 
     customAmounts[wbtc.address] = parseUnits("0.001", await wbtc.decimals());
 
-    supportedCoinsList.push(usdc, usdt, dai, weth, wbtc);
+    supportedCoinsList.push(usdc, usdt, dai, weth, wbtc, frax);
 
-    console.log("Major coins (USDC, USDT, DAI, WETH, WBTC) are set.");
+    console.log("Major coins (USDC, USDT, DAI, WETH, WBTC, FRAX) are set.");
 }
 
 // TODO: add your new exchange setup function above this line. use example below

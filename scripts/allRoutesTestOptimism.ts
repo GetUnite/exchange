@@ -2,7 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, BigNumberish, constants } from "ethers";
 import { formatEther, formatUnits, parseEther, parseUnits } from "ethers/lib/utils";
 import { ethers, network } from "hardhat";
-import { Exchange, IERC20Metadata } from "../typechain";
+import { Exchange, IERC20Metadata, IWrappedEther } from "../typechain";
 
 async function getImpersonatedSigner(address: string): Promise<SignerWithAddress> {
     await ethers.provider.send(
@@ -64,8 +64,17 @@ async function main() {
     signers = await ethers.getSigners();
 
     const weth = await ethers.getContractAt("IWrappedEther", "0x4200000000000000000000000000000000000006");
+    const usdc = await ethers.getContractAt("IERC20Metadata", "0x7F5c764cBc14f9669B88837ca1490cCa17c31607");
+    const usdt = await ethers.getContractAt("IERC20Metadata", "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58");
+    const dai = await ethers.getContractAt("IERC20Metadata", "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1");
+    const wbtc = await ethers.getContractAt("IERC20Metadata", "0x68f180fcCe6836688e9084f035309E29Bf0A2095");
+    const frax = await ethers.getContractAt("IERC20Metadata", "0x2E3D870790dC77A83DD1d18184Acc7439A53f475");
 
-    const supportedCoinList: IERC20Metadata[] = [];
+    const supportedCoinList: (IERC20Metadata | IWrappedEther)[] = [];
+    customAmounts[wbtc.address] = parseUnits("0.001", await wbtc.decimals());
+
+    supportedCoinList.push(usdc, usdt, dai, weth, wbtc, frax);
+
     await weth.deposit({ value: parseEther("1000.0") });
 
     // get all supported coins - swap ETH for all coins

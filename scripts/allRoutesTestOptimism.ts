@@ -69,11 +69,13 @@ async function main() {
     const dai = await ethers.getContractAt("IERC20Metadata", "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1");
     const wbtc = await ethers.getContractAt("IERC20Metadata", "0x68f180fcCe6836688e9084f035309E29Bf0A2095");
     const frax = await ethers.getContractAt("IERC20Metadata", "0x2E3D870790dC77A83DD1d18184Acc7439A53f475");
+    const wstEthCrv = await ethers.getContractAt("IERC20Metadata", "0xEfDE221f306152971D8e9f181bFe998447975810");
+
 
     const supportedCoinList: (IERC20Metadata | IWrappedEther)[] = [];
     customAmounts[wbtc.address] = parseUnits("0.001", await wbtc.decimals());
 
-    supportedCoinList.push(usdc, usdt, dai, weth, wbtc, frax);
+    supportedCoinList.push(usdc, usdt, dai, weth, wbtc, frax, wstEthCrv);
 
     await weth.deposit({ value: parseEther("1000.0") });
 

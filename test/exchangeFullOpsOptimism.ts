@@ -228,6 +228,25 @@ async function setupMajorCoins() {
     console.log("Major coins (USDC, USDT, DAI, WETH, WBTC, FRAX) are set.");
 }
 
+let wstEthCrv: IERC20Metadata;
+async function setupWstEthCrvMinorCoin() {
+    wstEthCrv = await ethers.getContractAt("IERC20Metadata", "0xEfDE221f306152971D8e9f181bFe998447975810");
+    const pool = "0xB90B9B1F91a01Ea22A182CD84C1E22222e39B415";
+
+    const edge: Edge = { swapProtocol: 4, pool: pool, fromCoin: wstEthCrv.address, toCoin: weth.address };
+
+    const adapterFactory = await ethers.getContractFactory("OptimismCurveWstEthAdapter");
+    const adapter = await adapterFactory.deploy();
+
+    await exchange.registerAdapters([adapter.address], [4]);
+    const tx = await exchange.createMinorCoinEdge([edge]);
+    console.log(tx.data);
+
+    supportedCoinsList.push(wstEthCrv);
+
+    console.log("Minor coin (wstETHCRV) is set.");
+}
+
 // TODO: add your new exchange setup function above this line. use example below
 //
 // always specify in function name if you are adding new minor coin, doing some
@@ -318,7 +337,8 @@ describe("Exchange (full setup operations on Optimism Mainnet)", async () => {
         await exchange.setWrappedNativeToken(weth.address);
         console.log("Clean Exchange contract deployed, setting up routes...\n");
         // adaprter creations:
-        await setupMajorCoins();
+        await setupMajorCoins();         // adapter ids: 1, 2, 3
+        await setupWstEthCrvMinorCoin(); // adapter ids: 4
 
         // TODO: add your new exchange setup function call above this line. add adapter
         // id comment after function call if you are registering any new adapters inside

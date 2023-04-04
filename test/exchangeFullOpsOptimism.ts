@@ -239,12 +239,28 @@ async function setupWstEthCrvMinorCoin() {
     const adapter = await adapterFactory.deploy();
 
     await exchange.registerAdapters([adapter.address], [4]);
-    const tx = await exchange.createMinorCoinEdge([edge]);
-    console.log(tx.data);
+    await exchange.createMinorCoinEdge([edge]);
 
     supportedCoinsList.push(wstEthCrv);
 
     console.log("Minor coin (wstETHCRV) is set.");
+}
+
+let ldo: IERC20Metadata;
+async function setupLdoMinorCoin() {
+    const encodedFeeData3 = "0x0000000000000000000000000000000000000bb8"; // fee tier 3000 (0.3%)
+    const swapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
+    
+    ldo = await ethers.getContractAt("IERC20Metadata", "0xFdb794692724153d1488CcdBE0C56c252596735F");
+
+    const edge: Edge = { swapProtocol: 3, pool: encodedFeeData3, fromCoin: ldo.address, toCoin: weth.address };
+
+    await exchange.createMinorCoinEdge([edge]);
+    await exchange.createApproval([ldo.address], [swapRouter]);
+
+    supportedCoinsList.push(ldo);
+
+    console.log("Minor coin (LDO) is set.");
 }
 
 // TODO: add your new exchange setup function above this line. use example below
@@ -339,6 +355,7 @@ describe("Exchange (full setup operations on Optimism Mainnet)", async () => {
         // adaprter creations:
         await setupMajorCoins();         // adapter ids: 1, 2, 3
         await setupWstEthCrvMinorCoin(); // adapter ids: 4
+        await setupLdoMinorCoin();
 
         // TODO: add your new exchange setup function call above this line. add adapter
         // id comment after function call if you are registering any new adapters inside
@@ -359,7 +376,7 @@ describe("Exchange (full setup operations on Optimism Mainnet)", async () => {
         for (let i = 0; i < supportedCoinsList.length; i++) {
             const coin = supportedCoinsList[i];
             if (coin.address == weth.address) continue;
-            const ethToCoinAmount = parseEther("20.0");
+            const ethToCoinAmount = parseEther("10.0");
             await testSwap(nativeEth, coin.address, ethToCoinAmount);
         }
         console.log();
@@ -374,7 +391,7 @@ describe("Exchange (full setup operations on Optimism Mainnet)", async () => {
                 const coinOut = supportedCoinsList[j];
 
                 const amount = customAmounts[coinIn.address] == null ?
-                    parseUnits("1", await coinIn.decimals()) :
+                    parseUnits("0.5", await coinIn.decimals()) :
                     customAmounts[coinIn.address];
 
                 await testSwap(coinIn.address, coinOut.address, amount);

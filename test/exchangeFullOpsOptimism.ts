@@ -265,7 +265,7 @@ async function setupLdoMinorCoin() {
 
 let beefyLibraryAddress: string;
 let mooHopUSDC: IERC20Metadata;
-async function setupBeefyHopUsdcMinorCoins() {
+async function setupBeefyHopUsdcMinorCoin() {
     mooHopUSDC = await ethers.getContractAt("IERC20Metadata", "0xE2f035f59De6a952FF699b4EDD0f99c466f25fEc");
     const hopSwapPool = "0x3c0FFAca566fCcfD9Cc95139FEF6CBA143795963";
     const hopUsdcLpToken = "0x2e17b8193566345a2Dd467183526dEdc42d2d5A8";
@@ -383,7 +383,7 @@ describe("Exchange (full setup operations on Optimism Mainnet)", async () => {
         await setupMajorCoins();         // adapter ids: 1, 2, 3
         await setupWstEthCrvMinorCoin(); // adapter ids: 4
         await setupLdoMinorCoin();
-        await setupBeefyHopUsdcMinorCoins(); // adapter ids: 5
+        await setupBeefyHopUsdcMinorCoin(); // adapter ids: 5
 
         // TODO: add your new exchange setup function call above this line. add adapter
         // id comment after function call if you are registering any new adapters inside

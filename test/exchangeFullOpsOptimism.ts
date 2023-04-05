@@ -250,7 +250,7 @@ let ldo: IERC20Metadata;
 async function setupLdoMinorCoin() {
     const encodedFeeData3 = "0x0000000000000000000000000000000000000bb8"; // fee tier 3000 (0.3%)
     const swapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
-    
+
     ldo = await ethers.getContractAt("IERC20Metadata", "0xFdb794692724153d1488CcdBE0C56c252596735F");
 
     const edge: Edge = { swapProtocol: 3, pool: encodedFeeData3, fromCoin: ldo.address, toCoin: weth.address };
@@ -261,6 +261,33 @@ async function setupLdoMinorCoin() {
     supportedCoinsList.push(ldo);
 
     console.log("Minor coin (LDO) is set.");
+}
+
+let beefyLibraryAddress: string;
+let mooHopUSDC: IERC20Metadata;
+async function setupBeefyHopUsdcMinorCoins() {
+    mooHopUSDC = await ethers.getContractAt("IERC20Metadata", "0xE2f035f59De6a952FF699b4EDD0f99c466f25fEc");
+    const hopSwapPool = "0x3c0FFAca566fCcfD9Cc95139FEF6CBA143795963";
+    const hopUsdcLpToken = "0x2e17b8193566345a2Dd467183526dEdc42d2d5A8";
+
+    const edge: Edge = { swapProtocol: 5, pool: mooHopUSDC.address, fromCoin: mooHopUSDC.address, toCoin: usdc.address };
+
+    await exchange.createMinorCoinEdge([edge]);
+    await exchange.createApproval([usdc.address, hopUsdcLpToken, hopUsdcLpToken], [hopSwapPool, mooHopUSDC.address, hopSwapPool]);
+
+    const libraryFactory = await ethers.getContractFactory("BeefyBase");
+    const library = await libraryFactory.deploy();
+    await library.deployTransaction.wait();
+    beefyLibraryAddress = library.address;
+
+    const adapterFactory = await ethers.getContractFactory("BeefyHopUsdcAdapter", { libraries: { BeefyBase: beefyLibraryAddress } });
+    const adapter = await adapterFactory.deploy();
+
+    await exchange.registerAdapters([adapter.address], [5]);
+
+    supportedCoinsList.push(mooHopUSDC);
+
+    console.log("Minor coin (mooHopUSDC) is set.");
 }
 
 // TODO: add your new exchange setup function above this line. use example below
@@ -356,6 +383,7 @@ describe("Exchange (full setup operations on Optimism Mainnet)", async () => {
         await setupMajorCoins();         // adapter ids: 1, 2, 3
         await setupWstEthCrvMinorCoin(); // adapter ids: 4
         await setupLdoMinorCoin();
+        await setupBeefyHopUsdcMinorCoins(); // adapter ids: 5
 
         // TODO: add your new exchange setup function call above this line. add adapter
         // id comment after function call if you are registering any new adapters inside

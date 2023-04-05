@@ -17,8 +17,6 @@ interface IHopSwap {
         uint256 minToMint,
         uint256 deadline
     ) external returns (uint256);
-
-    function getToken(uint8 index) external view returns (address);
 }
 
 contract BeefyHopUsdcAdapter is IExchangeAdapter {

@@ -291,7 +291,7 @@ async function setupBeefyHopUsdcMinorCoin() {
 }
 
 let mooCurveFsUSD: IERC20Metadata;
-async function setupBeefyCurveFsUSDMinorCoins() {
+async function setupBeefyCurveFsUSDMinorCoin() {
     mooCurveFsUSD = await ethers.getContractAt("IERC20Metadata", "0x107Dbf9c9C0EF2Df114159e5C7DC2baf7C444cFF");
     const curvePool = "0x061b87122Ed14b9526A813209C8a59a633257bAb";
     const curveMetaPool = "0x167e42a1C7ab4Be03764A2222aAC57F5f6754411";
@@ -309,6 +309,28 @@ async function setupBeefyCurveFsUSDMinorCoins() {
     supportedCoinsList.push(mooCurveFsUSD);
 
     console.log("Minor coin (mooCurveFsUSD) is set.");
+}
+
+let mooStargateUsdc: IERC20Metadata;
+async function setupBeefyStargateUsdcMinorCoin() {
+    mooStargateUsdc = await ethers.getContractAt("IERC20Metadata", "0xe536F8141D8EB7B1f096934AF3329cB581bFe995");
+    const susdc = "0xDecC0c09c3B5f6e92EF4184125D5648a66E35298";
+    const stargate = "0xB0D502E938ed5f4df2E681fE6E419ff29631d62b";
+    
+    const edge: Edge = { swapProtocol: 7, pool: mooStargateUsdc.address, fromCoin: mooStargateUsdc.address, toCoin: usdc.address };
+
+    await exchange.createMinorCoinEdge([edge]);
+    await exchange.createApproval([usdc.address, susdc], [stargate, mooStargateUsdc.address]);
+
+    const adapterFactory = await ethers.getContractFactory("BeefyStargateUsdcAdapter", { libraries: { BeefyBase: beefyLibraryAddress } });
+    const adapter = await adapterFactory.deploy();
+
+    await exchange.registerAdapters([adapter.address], [7]);
+
+    supportedCoinsList.push(mooStargateUsdc);
+    customAmounts[mooStargateUsdc.address] = parseUnits("1.0", await usdc.decimals());
+
+    console.log("Minor coin (mooStargateUsdc) is set.");
 }
 
 // TODO: add your new exchange setup function above this line. use example below
@@ -405,7 +427,8 @@ describe("Exchange (full setup operations on Optimism Mainnet)", async () => {
         await setupWstEthCrvMinorCoin(); // adapter ids: 4
         await setupLdoMinorCoin();
         await setupBeefyHopUsdcMinorCoin(); // adapter ids: 5
-        await setupBeefyCurveFsUSDMinorCoins(); // adapter ids: 6
+        await setupBeefyCurveFsUSDMinorCoin(); // adapter ids: 6
+        await setupBeefyStargateUsdcMinorCoin(); // adapter ids: 7
 
         // TODO: add your new exchange setup function call above this line. add adapter
         // id comment after function call if you are registering any new adapters inside

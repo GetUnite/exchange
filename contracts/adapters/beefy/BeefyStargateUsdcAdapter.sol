@@ -1,30 +1,34 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
+
 import {IExchangeAdapter} from "./../../interfaces/IExchangeAdapter.sol";
 import {BeefyBase} from "./BeefyBase.sol";
 
-interface IHopSwap {
-    function removeLiquidityOneToken(
-        uint256 tokenAmount,
-        uint8 tokenIndex,
-        uint256 minAmount,
-        uint256 deadline
-    ) external returns (uint256);
-
+interface IStargate {
     function addLiquidity(
-        uint256[] memory amounts,
-        uint256 minToMint,
-        uint256 deadline
-    ) external returns (uint256);
+        uint256 _poolId,
+        uint256 _amountLD,
+        address _to
+    ) external;
+
+    function instantRedeemLocal(
+        uint16 _srcPoolId,
+        uint256 _amountLP,
+        address _to
+    ) external returns (uint256 amountSD);
 }
 
-contract BeefyHopUsdcAdapter is IExchangeAdapter {
-    IHopSwap public constant HOP =
-        IHopSwap(0x3c0FFAca566fCcfD9Cc95139FEF6CBA143795963);
+contract BeefyStargateUsdcAdapter is IExchangeAdapter {
+    IStargate public constant STARGATE =
+        IStargate(0xB0D502E938ed5f4df2E681fE6E419ff29631d62b);
     address public constant USDC = 0x7F5c764cBc14f9669B88837ca1490cCa17c31607;
     address public constant MOO_TOKEN =
-        0xE2f035f59De6a952FF699b4EDD0f99c466f25fEc;
+        0xe536F8141D8EB7B1f096934AF3329cB581bFe995;
+    IERC20Metadata public constant SUSDC =
+        IERC20Metadata(0xDecC0c09c3B5f6e92EF4184125D5648a66E35298);
+    uint16 public constant POOL_ID = 1;
 
     // 0x6012856e  =>  executeSwap(address,address,address,uint256)
     function executeSwap(
@@ -34,17 +38,18 @@ contract BeefyHopUsdcAdapter is IExchangeAdapter {
         uint256 amount
     ) external payable returns (uint256) {
         if (fromToken == USDC && toToken == MOO_TOKEN) {
-            // USDC -> HOP-LP-USDC
-            depositUsdcToHop(amount);
+            // USDC -> Stargate LP
+            depositUsdcToStargate(amount);
 
-            // HOP-LP-USDC -> moo token
+            // Stargate LP -> moo token
             return BeefyBase.beefyDepositAll(pool);
         } else if (fromToken == MOO_TOKEN && toToken == USDC) {
-            // moo token -> HOP-LP-USDC
+            // moo token -> Stargate LP
             uint256 hopReceived = BeefyBase.beefyWithdraw(pool, amount);
 
-            // HOP-LP-USDC -> USDC
-            return getUsdcFromHop(hopReceived);
+            // Stargate LP -> USDC
+            uint256 received = getUsdcFromStargate(hopReceived);
+            return received;
         } else {
             revert("Adapter: can't swap");
         }
@@ -68,13 +73,11 @@ contract BeefyHopUsdcAdapter is IExchangeAdapter {
         revert("Adapter: can't exit");
     }
 
-    function getUsdcFromHop(uint256 amount) internal returns (uint256) {
-        return HOP.removeLiquidityOneToken(amount, 0, 0, type(uint256).max);
+    function getUsdcFromStargate(uint256 amount) internal returns (uint256) {
+        return STARGATE.instantRedeemLocal(POOL_ID, amount, address(this));
     }
 
-    function depositUsdcToHop(uint256 amount) internal returns (uint256) {
-        uint256[] memory amounts = new uint256[](2);
-        amounts[0] = amount;
-        return HOP.addLiquidity(amounts, 0, type(uint256).max);
+    function depositUsdcToStargate(uint256 amount) internal {
+        STARGATE.addLiquidity(POOL_ID, amount, address(this));
     }
 }

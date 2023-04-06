@@ -2,10 +2,10 @@
 pragma solidity ^0.8.19;
 
 import {IExchangeAdapter} from "./../../interfaces/IExchangeAdapter.sol";
-import "./BeefyBase.sol";
+import {BeefyBase} from "./BeefyBase.sol";
 
-import "hardhat/console.sol";
-
+// solhint-disable func-name-mixedcase
+// solhint-disable var-name-mixedcase
 interface ICurve {
     function remove_liquidity_one_coin(
         address _pool,

@@ -290,6 +290,27 @@ async function setupBeefyHopUsdcMinorCoin() {
     console.log("Minor coin (mooHopUSDC) is set.");
 }
 
+let mooCurveFsUSD: IERC20Metadata;
+async function setupBeefyCurveFsUSDMinorCoins() {
+    mooCurveFsUSD = await ethers.getContractAt("IERC20Metadata", "0x107Dbf9c9C0EF2Df114159e5C7DC2baf7C444cFF");
+    const curvePool = "0x061b87122Ed14b9526A813209C8a59a633257bAb";
+    const curveMetaPool = "0x167e42a1C7ab4Be03764A2222aAC57F5f6754411";
+    
+    const edge: Edge = { swapProtocol: 6, pool: mooCurveFsUSD.address, fromCoin: mooCurveFsUSD.address, toCoin: usdc.address };
+
+    await exchange.createMinorCoinEdge([edge]);
+    await exchange.createApproval([usdc.address, curvePool, curvePool], [curveMetaPool, mooCurveFsUSD.address, curveMetaPool]);
+
+    const adapterFactory = await ethers.getContractFactory("BeefyCurveOpFSusdAdapter", { libraries: { BeefyBase: beefyLibraryAddress } });
+    const adapter = await adapterFactory.deploy();
+
+    await exchange.registerAdapters([adapter.address], [6]);
+
+    supportedCoinsList.push(mooCurveFsUSD);
+
+    console.log("Minor coin (mooCurveFsUSD) is set.");
+}
+
 // TODO: add your new exchange setup function above this line. use example below
 //
 // always specify in function name if you are adding new minor coin, doing some
@@ -384,6 +405,7 @@ describe("Exchange (full setup operations on Optimism Mainnet)", async () => {
         await setupWstEthCrvMinorCoin(); // adapter ids: 4
         await setupLdoMinorCoin();
         await setupBeefyHopUsdcMinorCoin(); // adapter ids: 5
+        await setupBeefyCurveFsUSDMinorCoins(); // adapter ids: 6
 
         // TODO: add your new exchange setup function call above this line. add adapter
         // id comment after function call if you are registering any new adapters inside

@@ -353,6 +353,30 @@ async function setupBeefyCurveWSTETHMinorCoin() {
     console.log("Minor coin (mooCurveWSTETH) is set.");
 }
 
+let op: IERC20Metadata;
+async function setupOpMinorCoin() {
+    const encodedFeeData3 = "0x0000000000000000000000000000000000000bb8"; // fee tier 3000 (0.3%)
+    const swapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
+
+    op = await ethers.getContractAt("IERC20Metadata", "0x4200000000000000000000000000000000000042");
+
+    const edge: Edge = { swapProtocol: 3, pool: encodedFeeData3, fromCoin: op.address, toCoin: weth.address };
+
+    const tx1 = await exchange.createMinorCoinEdge([edge]);
+    const tx2 = await exchange.createApproval([op.address], [swapRouter]);
+
+    console.log("--------------OP--------------");
+    console.log();
+    console.log(tx1.data);
+    console.log();
+    console.log(tx2.data);
+    console.log();
+
+    supportedCoinsList.push(op);
+
+    console.log("Minor coin (OP) is set.");
+}
+
 // TODO: add your new exchange setup function above this line. use example below
 //
 // always specify in function name if you are adding new minor coin, doing some
@@ -450,6 +474,7 @@ describe("Exchange (full setup operations on Optimism Mainnet)", async () => {
         await setupBeefyCurveFsUSDMinorCoin(); // adapter ids: 6
         await setupBeefyStargateUsdcMinorCoin(); // adapter ids: 7
         await setupBeefyCurveWSTETHMinorCoin(); // adapter ids: 8
+        await setupOpMinorCoin();
 
         // TODO: add your new exchange setup function call above this line. add adapter
         // id comment after function call if you are registering any new adapters inside

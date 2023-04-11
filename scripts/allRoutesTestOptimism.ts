@@ -74,12 +74,15 @@ async function main() {
     const mooHopUSDC = await ethers.getContractAt("IERC20Metadata", "0xE2f035f59De6a952FF699b4EDD0f99c466f25fEc");
     const mooCurveFsUSD = await ethers.getContractAt("IERC20Metadata", "0x107Dbf9c9C0EF2Df114159e5C7DC2baf7C444cFF");
     const mooStargateUsdc = await ethers.getContractAt("IERC20Metadata", "0xe536F8141D8EB7B1f096934AF3329cB581bFe995");
+    const mooCurveWSTETH = await ethers.getContractAt("IERC20Metadata", "0x0892a178c363b4739e5Ac89E9155B9c30214C0c0");
+    const ldo = await ethers.getContractAt("IERC20Metadata", "0xFdb794692724153d1488CcdBE0C56c252596735F");
+
 
     const supportedCoinList: (IERC20Metadata | IWrappedEther)[] = [];
     customAmounts[wbtc.address] = parseUnits("0.001", await wbtc.decimals());
     customAmounts[mooStargateUsdc.address] = parseUnits("1.0", await usdc.decimals());
 
-    supportedCoinList.push(usdc, usdt, dai, weth, wbtc, frax, wstEthCrv, mooHopUSDC, mooCurveFsUSD, mooStargateUsdc);
+    supportedCoinList.push(usdc, usdt, dai, weth, wbtc, frax, wstEthCrv, mooHopUSDC, mooCurveFsUSD, mooStargateUsdc, mooCurveWSTETH, ldo);
 
     await weth.deposit({ value: parseEther("1000.0") });
 

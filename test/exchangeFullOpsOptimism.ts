@@ -622,6 +622,7 @@ describe("Exchange (full setup operations on Optimism Mainnet)", async () => {
         await setupOpMinorCoin();
         await setOpAsMajorCoin();
         await setYearnMinorCoins();         // adapter ids: 9, 10, 11, 12
+        await setVelodromeMAIUSDCMinorCoin(); // adapter ids: 13
 
         // TODO: add your new exchange setup function call above this line. add adapter
         // id comment after function call if you are registering any new adapters inside

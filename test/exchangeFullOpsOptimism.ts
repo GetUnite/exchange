@@ -2,7 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, BigNumberish, constants } from "ethers";
 import { formatEther, formatUnits, parseEther, parseUnits } from "ethers/lib/utils";
 import { ethers, network } from "hardhat";
-import { Exchange, IERC20Metadata, IWrappedEther } from "../typechain";
+import { BeefyUniversalExchange, Exchange, IERC20Metadata, IWrappedEther, VelodromeCalldataSource } from "../typechain";
 
 type Edge = {
     swapProtocol: BigNumberish;
@@ -481,6 +481,45 @@ async function setYearnMinorCoins() {
     supportedCoinsList.push(yvUSDC, yvUSDT, yvDAI, yvOP);
 
     console.log("Minor coins (yvUSDC, yvUSDT, yvDAI, yvOP) are set.");
+}
+
+let mooVelodromeMAIUSDC: IERC20Metadata;
+let beefyExchange: BeefyUniversalExchange;
+let velodromeLibrary: VelodromeCalldataSource;
+async function setVelodromeMAIUSDCMinorCoin() {
+    mooVelodromeMAIUSDC = await ethers.getContractAt("IERC20Metadata", "0x01D9cfB8a9D43013a1FdC925640412D8d2D900F0");
+
+    const velodromeLp = "0xd62c9d8a3d4fd98b27caaefe3571782a3af0a737";
+    const velodromeRouter = "0xa132DAB612dB5cB9fC9Ac426A0Cc215A3423F9c9";
+    const mai = "0xdFA46478F9e5EA86d57387849598dbFB2e964b02";
+
+    const adapterFactory = await ethers.getContractFactory("BeefyUniversalAdapter");
+    const beefyExchangeFactory = await ethers.getContractFactory("BeefyUniversalExchange");
+    const velodromeLibraryFactory = await ethers.getContractFactory("VelodromeCalldataSource");
+
+    const adapter = await adapterFactory.deploy();
+    velodromeLibrary = await velodromeLibraryFactory.deploy();
+    beefyExchange = await beefyExchangeFactory.deploy(exchange.address, constants.AddressZero, true);
+
+    const edge: Edge = { swapProtocol: 13, pool: beefyExchange.address, fromCoin: mooVelodromeMAIUSDC.address, toCoin: usdc.address };
+
+    await exchange.registerAdapters([adapter.address], [13]);
+    await exchange.createMinorCoinEdge([edge]);
+
+    await beefyExchange.addBeefyPool(
+        mooVelodromeMAIUSDC.address,
+        {
+            want: velodromeLp,
+            dataContract: velodromeLibrary.address,
+            dataBuy: [],
+            dataSell: []
+        }
+    );
+    await beefyExchange.createApproval([usdc.address, mai, velodromeLp, velodromeLp], [velodromeRouter, velodromeRouter, mooVelodromeMAIUSDC.address, velodromeRouter])
+
+    supportedCoinsList.push(mooVelodromeMAIUSDC);
+
+    console.log("Minor coin (mooVelodromeMAIUSDC - via Universal beefy exchange) is set.");
 }
 
 // TODO: add your new exchange setup function above this line. use example below

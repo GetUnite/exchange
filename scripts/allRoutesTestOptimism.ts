@@ -82,12 +82,18 @@ async function main() {
     const yvDAI = await ethers.getContractAt("IERC20Metadata", "0x65343F414FFD6c97b0f6add33d16F6845Ac22BAc");
     const yvOP = await ethers.getContractAt("IERC20Metadata", "0x7D2382b1f8Af621229d33464340541Db362B4907");
 
+    const mooVelodromeMAIUSDC = await ethers.getContractAt("IERC20Metadata", "0x01D9cfB8a9D43013a1FdC925640412D8d2D900F0");
+    const dola = await ethers.getContractAt("IERC20Metadata", "0x8aE125E8653821E851F12A49F7765db9a9ce7384");
+    const mooVelodromeDOLAMAI = await ethers.getContractAt("IERC20Metadata", "0xa9913D2DA71768CD13eA75B05D9E91A3120E2f08");
+    const mooVelodromeDOLAFRAX = await ethers.getContractAt("IERC20Metadata", "0xe282AD2480fFD8e34454C56c4360E5ba3240a429");
 
     const supportedCoinList: (IERC20Metadata | IWrappedEther)[] = [];
     customAmounts[wbtc.address] = parseUnits("0.001", await wbtc.decimals());
     customAmounts[mooStargateUsdc.address] = parseUnits("1.0", await usdc.decimals());
+    customAmounts[mooVelodromeMAIUSDC.address] = parseUnits("0.000001", await mooVelodromeMAIUSDC.decimals());
 
-    supportedCoinList.push(usdc, usdt, dai, weth, wbtc, frax, wstEthCrv, mooHopUSDC, mooCurveFsUSD, mooStargateUsdc, mooCurveWSTETH, ldo, op, yvUSDC, yvUSDT, yvDAI, yvOP);
+    supportedCoinList.push(usdc, usdt, dai, weth, wbtc, frax, wstEthCrv, mooHopUSDC, mooCurveFsUSD, mooStargateUsdc, mooCurveWSTETH, ldo, op, yvUSDC, yvUSDT, yvDAI, yvOP,
+        mooVelodromeMAIUSDC, dola, mooVelodromeDOLAMAI, mooVelodromeDOLAFRAX);
 
     await weth.deposit({ value: parseEther("1000.0") });
 

@@ -110,7 +110,7 @@ contract VelodromeCalldataSource is IBeefyCalldataLibrary {
         );
         address tokenB = isInputA ? pair.token1() : pair.token0();
 
-        (uint256 amountReceivedA, uint256 amountReceivedB) = ROUTER
+        (, uint256 amountReceivedB) = ROUTER
             .removeLiquidity(
                 originToken,
                 tokenB,
@@ -122,15 +122,11 @@ contract VelodromeCalldataSource is IBeefyCalldataLibrary {
                 block.timestamp
             );
 
-        uint256 exchangeAmount = isInputA ? amountReceivedB : amountReceivedA;
-        address tokenFrom = isInputA ? tokenB : originToken;
-        address tokenTo = isInputA ? originToken : tokenB;
-
         ROUTER.swapExactTokensForTokensSimple(
-            exchangeAmount,
+            amountReceivedB,
             0,
-            tokenFrom,
-            tokenTo,
+            tokenB,
+            originToken,
             pair.stable(),
             address(this),
             block.timestamp

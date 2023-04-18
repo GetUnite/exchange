@@ -515,11 +515,163 @@ async function setVelodromeMAIUSDCMinorCoin() {
             dataSell: []
         }
     );
+
     await beefyExchange.createApproval([usdc.address, mai, velodromeLp, velodromeLp], [velodromeRouter, velodromeRouter, mooVelodromeMAIUSDC.address, velodromeRouter])
 
+    customAmounts[mooVelodromeMAIUSDC.address] = parseUnits("0.000001", await mooVelodromeMAIUSDC.decimals());
     supportedCoinsList.push(mooVelodromeMAIUSDC);
 
     console.log("Minor coin (mooVelodromeMAIUSDC - via Universal beefy exchange) is set.");
+}
+
+let dola: IERC20Metadata;
+async function setDolaMajorCoin() {
+    const wethUsdcPool = "0x79c912FEF520be002c2B6e57EC4324e260f38E50";
+    const threeCrvPool = "0x1337BedC9D22ecbe766dF105c9623922A27963EC";
+    const encodedFeeData3 = "0x0000000000000000000000000000000000000bb8"; // fee tier 3000 (0.3%)
+    const encodedFeeData05 = "0x00000000000000000000000000000000000001F4"; // fee tier 500 (0.05%)
+
+    const velodromeRouter = "0xa132DAB612dB5cB9fC9Ac426A0Cc215A3423F9c9";
+
+    dola = await ethers.getContractAt("IERC20Metadata", "0x8aE125E8653821E851F12A49F7765db9a9ce7384");
+    const dolaUsdcPool = "0x6C5019D345Ec05004A7E7B0623A91a0D9B8D590d";
+
+    let dolaWethRoute: Route, dolaUsdcRoute: Route, dolaUsdtRoute: Route, dolaDaiRoute: Route, dolaWbtcRoute: Route, dolaFraxRoute: Route, dolaOpRoute: Route,
+        wethDolaRoute: Route, usdcDolaRoute: Route, usdtDolaRoute: Route, daiDolaRoute: Route, wbtcDolaRoute: Route, fraxDolaRoute: Route, opDolaRoute: Route;
+
+    const dolaEdge: Edge = { swapProtocol: 1, pool: dolaUsdcPool, fromCoin: dola.address, toCoin: usdc.address };
+    const dolaEdgeReverse: Edge = { swapProtocol: 1, pool: dolaUsdcPool, fromCoin: usdc.address, toCoin: dola.address };
+
+    dolaWethRoute = [
+        dolaEdge,
+        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address },
+    ];
+    dolaUsdcRoute = [
+        dolaEdge
+    ];
+    dolaUsdtRoute = [
+        dolaEdge,
+        { swapProtocol: 2, pool: threeCrvPool, fromCoin: usdc.address, toCoin: usdt.address }
+    ];
+    dolaDaiRoute = [
+        dolaEdge,
+        { swapProtocol: 2, pool: threeCrvPool, fromCoin: usdc.address, toCoin: dai.address }
+    ];
+    dolaWbtcRoute = [
+        dolaEdge,
+        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address },
+        { swapProtocol: 3, pool: encodedFeeData3, fromCoin: weth.address, toCoin: wbtc.address }
+    ];
+    dolaFraxRoute = [
+        dolaEdge,
+        { swapProtocol: 3, pool: encodedFeeData05, fromCoin: usdc.address, toCoin: frax.address }
+    ];
+    dolaOpRoute = [
+        dolaEdge,
+        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address },
+        { swapProtocol: 3, pool: encodedFeeData3, fromCoin: weth.address, toCoin: op.address }
+    ];
+
+    wethDolaRoute = [
+        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address },
+        dolaEdgeReverse
+    ];
+    usdcDolaRoute = [
+        dolaEdgeReverse
+    ];
+    usdtDolaRoute = [
+        { swapProtocol: 2, pool: threeCrvPool, fromCoin: usdt.address, toCoin: usdc.address },
+        dolaEdgeReverse
+    ];
+    daiDolaRoute = [
+        { swapProtocol: 2, pool: threeCrvPool, fromCoin: dai.address, toCoin: usdc.address },
+        dolaEdgeReverse
+    ];
+    wbtcDolaRoute = [
+        { swapProtocol: 3, pool: encodedFeeData3, fromCoin: wbtc.address, toCoin: weth.address },
+        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address },
+        dolaEdgeReverse
+    ];
+    fraxDolaRoute = [
+        { swapProtocol: 3, pool: encodedFeeData05, fromCoin: frax.address, toCoin: usdc.address },
+        dolaEdgeReverse
+    ];
+    opDolaRoute = [
+        { swapProtocol: 3, pool: encodedFeeData3, fromCoin: op.address, toCoin: weth.address },
+        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address },
+        dolaEdgeReverse
+    ];
+
+    const routes = [dolaWethRoute, dolaUsdcRoute, dolaUsdtRoute, dolaDaiRoute, dolaWbtcRoute, dolaFraxRoute, dolaOpRoute,
+        wethDolaRoute, usdcDolaRoute, usdtDolaRoute, daiDolaRoute, wbtcDolaRoute, fraxDolaRoute, opDolaRoute]
+
+    await exchange.createInternalMajorRoutes(routes);
+    await exchange.createApproval([dola.address, usdc.address, weth.address], [velodromeRouter, velodromeRouter, velodromeRouter])
+
+    supportedCoinsList.push(dola);
+
+    const velodromeAdapterFactory = await ethers.getContractFactory("VelodromeAdapter");
+    const velodromeAdapter = await velodromeAdapterFactory.deploy();
+
+    await exchange.registerAdapters([velodromeAdapter.address], [1]); // +
+
+    console.log("Set DOLA as major coin");
+}
+
+let mooVelodromeDOLAMAI: IERC20Metadata;
+async function setVelodromeDolaMaiMinorCoin() {
+    mooVelodromeDOLAMAI = await ethers.getContractAt("IERC20Metadata", "0xa9913D2DA71768CD13eA75B05D9E91A3120E2f08");
+
+    const velodromeLp = "0x21950a0cA249A0ef3d182338c86c8C066B24D801";
+    const velodromeRouter = "0xa132DAB612dB5cB9fC9Ac426A0Cc215A3423F9c9";
+    const mai = "0xdFA46478F9e5EA86d57387849598dbFB2e964b02";
+
+    const edge: Edge = { swapProtocol: 13, pool: beefyExchange.address, fromCoin: mooVelodromeDOLAMAI.address, toCoin: dola.address };
+
+    await exchange.createMinorCoinEdge([edge]);  // +
+
+    await beefyExchange.addBeefyPool(
+        mooVelodromeDOLAMAI.address,
+        {
+            want: velodromeLp,
+            dataContract: velodromeLibrary.address,
+            dataBuy: [],
+            dataSell: []
+        }
+    );
+    await beefyExchange.createApproval([dola.address, velodromeLp, velodromeLp], [velodromeRouter, mooVelodromeDOLAMAI.address, velodromeRouter])
+
+    supportedCoinsList.push(mooVelodromeDOLAMAI);
+
+    console.log("Minor coin (mooVelodromeDOLAMAI - via Universal beefy exchange) is set.");
+}
+
+let mooVelodromeDOLAFRAX: IERC20Metadata;
+async function setVelodromeDolaFraxMinorCoin() {
+    mooVelodromeDOLAFRAX = await ethers.getContractAt("IERC20Metadata", "0xe282AD2480fFD8e34454C56c4360E5ba3240a429");
+
+    const velodromeLp = "0xD29DE64c1a9Dd3e829A7345BE1E9c32a9414541f";
+    const velodromeRouter = "0xa132DAB612dB5cB9fC9Ac426A0Cc215A3423F9c9";
+    const frax = "0x2E3D870790dC77A83DD1d18184Acc7439A53f475";
+
+    const edge: Edge = { swapProtocol: 13, pool: beefyExchange.address, fromCoin: mooVelodromeDOLAFRAX.address, toCoin: dola.address };
+
+    await exchange.createMinorCoinEdge([edge]); // +
+
+    await beefyExchange.addBeefyPool(
+        mooVelodromeDOLAFRAX.address,
+        {
+            want: velodromeLp,
+            dataContract: velodromeLibrary.address,
+            dataBuy: [],
+            dataSell: []
+        }
+    );
+    await beefyExchange.createApproval([frax, velodromeLp, velodromeLp], [velodromeRouter, mooVelodromeDOLAFRAX.address, velodromeRouter])
+
+    supportedCoinsList.push(mooVelodromeDOLAFRAX);
+
+    console.log("Minor coin (mooVelodromeDOLAFRAX - via Universal beefy exchange) is set.");
 }
 
 // TODO: add your new exchange setup function above this line. use example below
@@ -623,6 +775,9 @@ describe("Exchange (full setup operations on Optimism Mainnet)", async () => {
         await setOpAsMajorCoin();
         await setYearnMinorCoins();         // adapter ids: 9, 10, 11, 12
         await setVelodromeMAIUSDCMinorCoin(); // adapter ids: 13
+        await setDolaMajorCoin();
+        await setVelodromeDolaMaiMinorCoin();
+        await setVelodromeDolaFraxMinorCoin();
 
         // TODO: add your new exchange setup function call above this line. add adapter
         // id comment after function call if you are registering any new adapters inside

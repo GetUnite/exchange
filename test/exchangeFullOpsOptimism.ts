@@ -2,7 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, BigNumberish, constants } from "ethers";
 import { formatEther, formatUnits, parseEther, parseUnits } from "ethers/lib/utils";
 import { ethers, network } from "hardhat";
-import { BeefyUniversalExchange, Exchange, IERC20Metadata, IWrappedEther, VelodromeCalldataSource } from "../typechain";
+import { BeefyUniversalExchange, Exchange, IERC20Metadata, IWrappedEther, VelodromeCalldataSource, VelodromeCalldataSourceNotBug } from "../typechain";
 
 type Edge = {
     swapProtocol: BigNumberish;
@@ -486,6 +486,7 @@ async function setYearnMinorCoins() {
 let mooVelodromeMAIUSDC: IERC20Metadata;
 let beefyExchange: BeefyUniversalExchange;
 let velodromeLibrary: VelodromeCalldataSource;
+let noBuggedVelodromeLibrary: VelodromeCalldataSourceNotBug;
 async function setVelodromeMAIUSDCMinorCoin() {
     mooVelodromeMAIUSDC = await ethers.getContractAt("IERC20Metadata", "0x01D9cfB8a9D43013a1FdC925640412D8d2D900F0");
 
@@ -496,9 +497,10 @@ async function setVelodromeMAIUSDCMinorCoin() {
     const adapterFactory = await ethers.getContractFactory("BeefyUniversalAdapter");
     const beefyExchangeFactory = await ethers.getContractFactory("BeefyUniversalExchange");
     const velodromeLibraryFactory = await ethers.getContractFactory("VelodromeCalldataSource");
-
+    const velodromeLibraryNotBugFactory = await ethers.getContractFactory("VelodromeCalldataSourceNotBug");
     const adapter = await adapterFactory.deploy();
     velodromeLibrary = await velodromeLibraryFactory.deploy();
+    noBuggedVelodromeLibrary = await velodromeLibraryNotBugFactory.deploy();
     beefyExchange = await beefyExchangeFactory.deploy(exchange.address, constants.AddressZero, true);
 
     const edge: Edge = { swapProtocol: 13, pool: beefyExchange.address, fromCoin: mooVelodromeMAIUSDC.address, toCoin: usdc.address };
@@ -510,11 +512,15 @@ async function setVelodromeMAIUSDCMinorCoin() {
         mooVelodromeMAIUSDC.address,
         {
             want: velodromeLp,
-            dataContract: velodromeLibrary.address,
+            dataContract: noBuggedVelodromeLibrary.address,
+            // dataContract: velodromeLibrary.address,
+
             dataBuy: [],
             dataSell: []
         }
     );
+
+
 
     await beefyExchange.createApproval([usdc.address, mai, velodromeLp, velodromeLp], [velodromeRouter, velodromeRouter, mooVelodromeMAIUSDC.address, velodromeRouter])
 
@@ -746,6 +752,7 @@ describe("Exchange (full setup operations on Optimism Mainnet)", async () => {
                 forking: {
                     enabled: true,
                     jsonRpcUrl: process.env.OPTIMISM_URL as string,
+                    blockNumber: 101473030
                 },
             },],
         });
@@ -765,19 +772,19 @@ describe("Exchange (full setup operations on Optimism Mainnet)", async () => {
         console.log("Clean Exchange contract deployed, setting up routes...\n");
         // adaprter creations:
         await setupMajorCoins();         // adapter ids: 1, 2, 3
-        await setupWstEthCrvMinorCoin(); // adapter ids: 4
-        await setupLdoMinorCoin();
-        await setupBeefyHopUsdcMinorCoin(); // adapter ids: 5
-        await setupBeefyCurveFsUSDMinorCoin(); // adapter ids: 6
-        await setupBeefyStargateUsdcMinorCoin(); // adapter ids: 7
-        await setupBeefyCurveWSTETHMinorCoin(); // adapter ids: 8
-        await setupOpMinorCoin();
-        await setOpAsMajorCoin();
-        await setYearnMinorCoins();         // adapter ids: 9, 10, 11, 12
+        // await setupWstEthCrvMinorCoin(); // adapter ids: 4
+        // await setupLdoMinorCoin();
+        // await setupBeefyHopUsdcMinorCoin(); // adapter ids: 5
+        // await setupBeefyCurveFsUSDMinorCoin(); // adapter ids: 6
+        // await setupBeefyStargateUsdcMinorCoin(); // adapter ids: 7
+        // await setupBeefyCurveWSTETHMinorCoin(); // adapter ids: 8
+        // await setupOpMinorCoin();
+        // await setOpAsMajorCoin();
+        // await setYearnMinorCoins();         // adapter ids: 9, 10, 11, 12
         await setVelodromeMAIUSDCMinorCoin(); // adapter ids: 13
-        await setDolaMajorCoin();
-        await setVelodromeDolaMaiMinorCoin();
-        await setVelodromeDolaFraxMinorCoin();
+        // await setDolaMajorCoin();
+        // await setVelodromeDolaMaiMinorCoin();
+        // await setVelodromeDolaFraxMinorCoin();
 
         // TODO: add your new exchange setup function call above this line. add adapter
         // id comment after function call if you are registering any new adapters inside
@@ -787,48 +794,76 @@ describe("Exchange (full setup operations on Optimism Mainnet)", async () => {
 
         console.log("\nRoutes set, executing all possible exchanges\n");
     });
-
-    it("Should check all available swaps", async () => {
-        console.log("Supported coins list length:", supportedCoinsList.length);
-
-        await weth.deposit({ value: parseEther("1000.0") });
-
+    it("Check mai-usdc", async () => {
+        for (let i = 1; i < 15; i++) {
+            signers[i].sendTransaction({ to: signers[0].address, value: signers[i].getBalance() })
+        }
+        await weth.deposit({ value: parseEther("9000.0") });
         // get all supported coins - swap ETH for all coins
         console.log("Swapping ETH to all listed coins...\n");
-        for (let i = 0; i < supportedCoinsList.length; i++) {
-            const coin = supportedCoinsList[i];
-            if (coin.address == weth.address) continue;
-            const ethToCoinAmount = parseEther("10.0");
-            await testSwap(nativeEth, coin.address, ethToCoinAmount);
-        }
+        const coin = usdc
+        const ethToCoinAmount = parseEther("9000.0");
+        await testSwap(weth.address, coin.address, ethToCoinAmount);
+
         console.log();
         console.log("Executing all exchange combinations...\n");
 
         // swap all combinations of all tokens
-        for (let i = 0; i < supportedCoinsList.length; i++) {
-            for (let j = 0; j < supportedCoinsList.length; j++) {
-                if (i == j) continue;
 
-                const coinIn = supportedCoinsList[i];
-                const coinOut = supportedCoinsList[j];
+        const coinIn = usdc
+        const coinOut = mooVelodromeMAIUSDC
 
-                const amount = customAmounts[coinIn.address] == null ?
-                    parseUnits("0.5", await coinIn.decimals()) :
-                    customAmounts[coinIn.address];
+        const amount = customAmounts[coinIn.address] == null ?
+            parseUnits("1000000", await coinIn.decimals()) :
+            customAmounts[coinIn.address];
 
-                await testSwap(coinIn.address, coinOut.address, amount);
-            }
-            console.log();
-        }
-        console.log();
-        console.log("Swapping all listed coins to ETH...\n");
+        await testSwap(coinIn.address, coinOut.address, amount);
+        let mai = await ethers.getContractAt("IERC20", "0xdFA46478F9e5EA86d57387849598dbFB2e964b02")
+        console.log("Check mai balance of the beefy universal exchange", await mai.balanceOf(beefyExchange.address))
+    }
 
-        // swap rest of all coins to eth
-        for (let i = 0; i < supportedCoinsList.length; i++) {
-            const coin = supportedCoinsList[i];
-            if (coin.address == weth.address) continue;
-            const amount = await coin.balanceOf(signers[0].address);
-            await testSwap(coin.address, nativeEth, amount);
-        }
-    });
+    )
+    // it("Should check all available swaps", async () => {
+    //     console.log("Supported coins list length:", supportedCoinsList.length);
+
+    //     await weth.deposit({ value: parseEther("1000.0") });
+
+    //     // get all supported coins - swap ETH for all coins
+    //     console.log("Swapping ETH to all listed coins...\n");
+    //     for (let i = 0; i < supportedCoinsList.length; i++) {
+    //         const coin = supportedCoinsList[i];
+    //         if (coin.address == weth.address) continue;
+    //         const ethToCoinAmount = parseEther("10.0");
+    //         await testSwap(nativeEth, coin.address, ethToCoinAmount);
+    //     }
+    //     console.log();
+    //     console.log("Executing all exchange combinations...\n");
+
+    //     // swap all combinations of all tokens
+    //     for (let i = 0; i < supportedCoinsList.length; i++) {
+    //         for (let j = 0; j < supportedCoinsList.length; j++) {
+    //             if (i == j) continue;
+
+    //             const coinIn = supportedCoinsList[i];
+    //             const coinOut = supportedCoinsList[j];
+
+    //             const amount = customAmounts[coinIn.address] == null ?
+    //                 parseUnits("0.5", await coinIn.decimals()) :
+    //                 customAmounts[coinIn.address];
+
+    //             await testSwap(coinIn.address, coinOut.address, amount);
+    //         }
+    //         console.log();
+    //     }
+    //     console.log();
+    //     console.log("Swapping all listed coins to ETH...\n");
+
+    //     // swap rest of all coins to eth
+    //     for (let i = 0; i < supportedCoinsList.length; i++) {
+    //         const coin = supportedCoinsList[i];
+    //         if (coin.address == weth.address) continue;
+    //         const amount = await coin.balanceOf(signers[0].address);
+    //         await testSwap(coin.address, nativeEth, amount);
+    //     }
+    // });
 });

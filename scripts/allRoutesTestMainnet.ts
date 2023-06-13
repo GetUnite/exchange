@@ -92,6 +92,7 @@ async function main() {
     const cvxCrvFraxLP = await ethers.getContractAt("IERC20Metadata", "0x527331f3f550f6f85acfecab9cc0889180c6f1d5");
     const jpegToken = await ethers.getContractAt("IERC20Metadata", "0xE80C0cd204D654CEbe8dd64A4857cAb6Be8345a3");
     const wsbtc = await ethers.getContractAt("IERC20Metadata", "0x051d7e5609917bd9b73f04bac0ded8dd46a74301");
+    const euroc = await ethers.getContractAt("IERC20Metadata", "0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c");
 
     customAmounts[reth.address] = parseUnits("0.1", await reth.decimals());
     customAmounts[spell.address] = parseUnits("1000", await spell.decimals());
@@ -101,7 +102,7 @@ async function main() {
     customAmounts[jpegToken.address] = parseUnits("1000", await jpegToken.decimals());
     customAmounts[wsbtc.address] = parseUnits("0.001", await wsbtc.decimals());
 
-    const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx, alluo, weth, reth, ldo, spell, angle, eurs, ageur, eurt, stEthEth, fraxUsdc, cvxEth, wbtc, fxs, fraxBP, ycrvLp, frxEthLp, cvxCrvFraxLP, jpegToken, wsbtc];
+    const supportedCoinList = [dai, usdc, usdt, frax, threeCrvLp, ust, crv, cvx, alluo, weth, reth, ldo, spell, angle, eurs, ageur, eurt, stEthEth, fraxUsdc, cvxEth, wbtc, fxs, fraxBP, ycrvLp, frxEthLp, cvxCrvFraxLP, jpegToken, wsbtc, euroc];
     await weth.deposit({ value: parseEther("1000.0") });
 
     // get all supported coins - swap ETH for all coins

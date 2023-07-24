@@ -20,7 +20,6 @@ interface IUniswapRouterSolidly {
     ) external returns (uint256[] memory amounts);
 }
 
-
 interface IExchangeAdapter {
     // 0x6012856e  =>  executeSwap(address,address,address,uint256)
     function executeSwap(
@@ -47,8 +46,7 @@ interface IExchangeAdapter {
 
 contract VelodromeAdapter is IExchangeAdapter {
     using SafeERC20 for IERC20;
-    address public constant ROUTER =
-        0xa132DAB612dB5cB9fC9Ac426A0Cc215A3423F9c9;
+    address public constant ROUTER = 0xa132DAB612dB5cB9fC9Ac426A0Cc215A3423F9c9;
 
     function executeSwap(
         address pool,

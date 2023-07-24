@@ -2,7 +2,18 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, BigNumberish, constants } from "ethers";
 import { formatEther, formatUnits, parseEther, parseUnits } from "ethers/lib/utils";
 import { ethers, network } from "hardhat";
-import { BeefyUniversalExchange, Exchange, IERC20Metadata, IWrappedEther, VelodromeCalldataSource } from "../typechain";
+import { Exchange, IERC20Metadata, IWrappedEther } from "../typechain";
+import { createInterface } from "readline";
+
+const question = (questionText: string) => {
+    const rl = createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+
+    return new Promise<string>(resolve => rl.question(questionText, resolve))
+        .finally(() => rl.close());
+}
 
 type Edge = {
     swapProtocol: BigNumberish;
@@ -17,7 +28,53 @@ let exchange: Exchange;
 let supportedCoinsList: (IERC20Metadata | IWrappedEther)[] = [];
 let customAmounts: { [key: string]: BigNumber } = {};
 
+let majorRoutes: { [key: string]: Route } = {};
+let majorCoins: string[] = [];
+
 const nativeEth = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+
+function storeMajorRoutes(routes: Route[]) {
+    for (let i = 0; i < routes.length; i++) {
+        const route = routes[i];
+        const from = route[0].fromCoin;
+        const to = route[route.length - 1].toCoin;
+
+        if (!majorCoins.includes(from))
+            majorCoins.push(from);
+
+        if (!majorCoins.includes(to))
+            majorCoins.push(to);
+
+        majorRoutes[from + to] = route;
+    }
+}
+
+// toCoin - known major coin
+// fromCoin - new major coin
+function createMajorRoutesForToken(edge: Edge) {
+    const res: Route[] = [];
+    const reverseEdge: Edge = {
+        fromCoin: edge.toCoin,
+        toCoin: edge.fromCoin,
+        pool: edge.pool,
+        swapProtocol: edge.swapProtocol
+    };
+
+    for (let i = 0; i < majorCoins.length; i++) {
+        const coin = majorCoins[i];
+        if (coin == edge.toCoin) {
+            continue;
+        }
+
+        const route = [...majorRoutes[coin + edge.toCoin], reverseEdge];
+        const reverseRoute = [edge, ...majorRoutes[edge.toCoin + coin]];
+
+        res.push(route, reverseRoute);
+    }
+
+    res.push([edge], [reverseEdge]);
+    return res;
+}
 
 async function testSwap(fromAddress: string, toAddress: string, amount: BigNumberish) {
     if (fromAddress == constants.AddressZero || fromAddress == nativeEth) {
@@ -57,7 +114,7 @@ let weth: IWrappedEther,
     wbtc: IERC20Metadata,
     frax: IERC20Metadata;
 async function setupMajorCoins() {
-    const wethUsdcPool = "0x79c912FEF520be002c2B6e57EC4324e260f38E50";
+    const wethUsdcPoolV2 = "0x0493Bf8b6DBB159Ce2Db2E0E8403E753Abd1235b";
     const threeCrvPool = "0x1337BedC9D22ecbe766dF105c9623922A27963EC";
     const encodedFeeData3 = "0x0000000000000000000000000000000000000bb8"; // fee tier 3000 (0.3%)
     const encodedFeeData05 = "0x00000000000000000000000000000000000001F4"; // fee tier 500 (0.05%)
@@ -91,10 +148,10 @@ async function setupMajorCoins() {
     ];
     fraxWethRoute = [
         { swapProtocol: 3, pool: encodedFeeData05, fromCoin: frax.address, toCoin: usdc.address },
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: usdc.address, toCoin: weth.address },
     ]
     wethFraxRoute = [
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: weth.address, toCoin: usdc.address },
         { swapProtocol: 3, pool: encodedFeeData05, fromCoin: usdc.address, toCoin: frax.address }
     ];
     fraxUsdtRoute = [
@@ -115,12 +172,12 @@ async function setupMajorCoins() {
     ];
     fraxWbtcRoute = [
         { swapProtocol: 3, pool: encodedFeeData05, fromCoin: frax.address, toCoin: usdc.address },
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: usdc.address, toCoin: weth.address },
         { swapProtocol: 3, pool: encodedFeeData3, fromCoin: weth.address, toCoin: wbtc.address }
     ];
     wbtcFraxRoute = [
         { swapProtocol: 3, pool: encodedFeeData3, fromCoin: wbtc.address, toCoin: weth.address },
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: weth.address, toCoin: usdc.address },
         { swapProtocol: 3, pool: encodedFeeData05, fromCoin: usdc.address, toCoin: frax.address }
     ];
     wbtcWethRoute = [
@@ -131,37 +188,37 @@ async function setupMajorCoins() {
     ];
     wbtcUsdcRoute = [
         { swapProtocol: 3, pool: encodedFeeData3, fromCoin: wbtc.address, toCoin: weth.address },
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address }
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: weth.address, toCoin: usdc.address }
     ];
     usdcWbtcRoute = [
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: usdc.address, toCoin: weth.address },
         { swapProtocol: 3, pool: encodedFeeData3, fromCoin: weth.address, toCoin: wbtc.address }
     ];
     wbtcUsdtRoute = [
         { swapProtocol: 3, pool: encodedFeeData3, fromCoin: wbtc.address, toCoin: weth.address },
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: weth.address, toCoin: usdc.address },
         { swapProtocol: 2, pool: threeCrvPool, fromCoin: usdc.address, toCoin: usdt.address }
     ];
     usdtWbtcRoute = [
         { swapProtocol: 2, pool: threeCrvPool, fromCoin: usdt.address, toCoin: usdc.address },
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: usdc.address, toCoin: weth.address },
         { swapProtocol: 3, pool: encodedFeeData3, fromCoin: weth.address, toCoin: wbtc.address }
     ];
     wbtcDaiRoute = [
         { swapProtocol: 3, pool: encodedFeeData3, fromCoin: wbtc.address, toCoin: weth.address },
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: weth.address, toCoin: usdc.address },
         { swapProtocol: 2, pool: threeCrvPool, fromCoin: usdc.address, toCoin: dai.address }
     ];
     daiWbtcRoute = [
         { swapProtocol: 2, pool: threeCrvPool, fromCoin: dai.address, toCoin: usdc.address },
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: usdc.address, toCoin: weth.address },
         { swapProtocol: 3, pool: encodedFeeData3, fromCoin: weth.address, toCoin: wbtc.address }
     ];
     usdcWethRoute = [
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address }
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: usdc.address, toCoin: weth.address }
     ];
     wethUsdcRoute = [
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address }
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: weth.address, toCoin: usdc.address }
     ];
     usdcUsdtRoute = [
         { swapProtocol: 2, pool: threeCrvPool, fromCoin: usdc.address, toCoin: usdt.address }
@@ -182,20 +239,20 @@ async function setupMajorCoins() {
         { swapProtocol: 2, pool: threeCrvPool, fromCoin: usdt.address, toCoin: dai.address }
     ];
     wethDaiRoute = [
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: weth.address, toCoin: usdc.address },
         { swapProtocol: 2, pool: threeCrvPool, fromCoin: usdc.address, toCoin: dai.address }
     ];
     daiWethRoute = [
         { swapProtocol: 2, pool: threeCrvPool, fromCoin: dai.address, toCoin: usdc.address },
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address }
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: usdc.address, toCoin: weth.address }
     ];
     wethUsdtRoute = [
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: weth.address, toCoin: usdc.address },
         { swapProtocol: 2, pool: threeCrvPool, fromCoin: usdc.address, toCoin: usdt.address }
     ];
     usdtWethRoute = [
         { swapProtocol: 2, pool: threeCrvPool, fromCoin: usdt.address, toCoin: usdc.address },
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address }
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: usdc.address, toCoin: weth.address }
     ];
 
     const velodromeAdapterFactory = await ethers.getContractFactory("SushiswapAdapter");
@@ -217,6 +274,7 @@ async function setupMajorCoins() {
         fraxWethRoute, fraxUsdcRoute, fraxUsdtRoute, fraxDaiRoute, fraxWbtcRoute,
         wethFraxRoute, usdcFraxRoute, usdtFraxRoute, daiFraxRoute, wbtcFraxRoute
     ];
+    storeMajorRoutes(routes);
     await exchange.createInternalMajorRoutes(routes);
     await exchange.registerAdapters([velodromeAdapter.address, optimism3crvAdapter.address, uniV3Adapter.address], [1, 2, 3]);
     await exchange.createApproval([weth.address, wbtc.address, usdc.address, frax.address], [swapRouter, swapRouter, swapRouter, swapRouter])
@@ -240,6 +298,8 @@ async function setupWstEthCrvMinorCoin() {
 
     await exchange.registerAdapters([adapter.address], [4]);
     await exchange.createMinorCoinEdge([edge]);
+
+    customAmounts[wstEthCrv.address] = parseUnits("0.1", await wstEthCrv.decimals());
 
     supportedCoinsList.push(wstEthCrv);
 
@@ -312,25 +372,34 @@ async function setupBeefyCurveFsUSDMinorCoin() {
 }
 
 let mooStargateUsdc: IERC20Metadata;
-async function setupBeefyStargateUsdcMinorCoin() {
+let mooStargateWeth: IERC20Metadata;
+async function setupBeefyStargateUsdcWethMinorCoins() {
     mooStargateUsdc = await ethers.getContractAt("IERC20Metadata", "0xe536F8141D8EB7B1f096934AF3329cB581bFe995");
+    mooStargateWeth = await ethers.getContractAt("IERC20Metadata", "0x79149B500f0d796aA7f85e0170d16C7e79BAd3C5");
     const susdc = "0xDecC0c09c3B5f6e92EF4184125D5648a66E35298";
+    const sweth = "0xd22363e3762cA7339569F3d33EADe20127D5F98C";
     const stargate = "0xB0D502E938ed5f4df2E681fE6E419ff29631d62b";
+    const sgeth = "0xb69c8cbcd90a39d8d3d3ccf0a3e968511c3856a0";
 
     const edge: Edge = { swapProtocol: 7, pool: mooStargateUsdc.address, fromCoin: mooStargateUsdc.address, toCoin: usdc.address };
+    const edgeWeth: Edge = { swapProtocol: 18, pool: mooStargateWeth.address, fromCoin: mooStargateWeth.address, toCoin: weth.address };
 
-    await exchange.createMinorCoinEdge([edge]);
+    await exchange.createMinorCoinEdge([edge, edgeWeth]);
     await exchange.createApproval([usdc.address, susdc], [stargate, mooStargateUsdc.address]);
+    await exchange.createApproval([weth.address, sweth, sgeth], [stargate, mooStargateWeth.address, stargate]);
 
     const adapterFactory = await ethers.getContractFactory("BeefyStargateUsdcAdapter", { libraries: { BeefyBase: beefyLibraryAddress } });
+    const adapterWethFactory = await ethers.getContractFactory("BeefyStargateWethAdapter", { libraries: { BeefyBase: beefyLibraryAddress } });
     const adapter = await adapterFactory.deploy();
+    const adapterWeth = await adapterWethFactory.deploy();
 
-    await exchange.registerAdapters([adapter.address], [7]);
+    await exchange.registerAdapters([adapter.address, adapterWeth.address], [7, 18]);
 
-    supportedCoinsList.push(mooStargateUsdc);
+    supportedCoinsList.push(mooStargateUsdc, mooStargateWeth);
     customAmounts[mooStargateUsdc.address] = parseUnits("1.0", await usdc.decimals());
+    customAmounts[mooStargateWeth.address] = parseUnits("0.05", await mooStargateWeth.decimals());
 
-    console.log("Minor coin (mooStargateUsdc) is set.");
+    console.log("Minor coins (mooStargateUsdc, mooStargateWeth) is set.");
 }
 
 let mooCurveWSTETH: IERC20Metadata;
@@ -347,6 +416,8 @@ async function setupBeefyCurveWSTETHMinorCoin() {
     const adapter = await adapterFactory.deploy();
 
     await exchange.registerAdapters([adapter.address], [8]);
+
+    customAmounts[mooCurveWSTETH.address] = parseUnits("0.1", await mooCurveWSTETH.decimals());
 
     supportedCoinsList.push(mooCurveWSTETH);
 
@@ -371,7 +442,7 @@ async function setupOpMinorCoin() {
 }
 
 async function setOpAsMajorCoin() {
-    const wethUsdcPool = "0x79c912FEF520be002c2B6e57EC4324e260f38E50";
+    const wethUsdcPoolV2 = "0x0493Bf8b6DBB159Ce2Db2E0E8403E753Abd1235b";
     const threeCrvPool = "0x1337BedC9D22ecbe766dF105c9623922A27963EC";
     const encodedFeeData3 = "0x0000000000000000000000000000000000000bb8"; // fee tier 3000 (0.3%)
     const encodedFeeData05 = "0x00000000000000000000000000000000000001F4"; // fee tier 500 (0.05%)
@@ -389,32 +460,32 @@ async function setOpAsMajorCoin() {
 
     opUsdcRoute = [
         edge,
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address }
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: weth.address, toCoin: usdc.address }
     ];
     usdcOpRoute = [
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: usdc.address, toCoin: weth.address },
         reverseEdge
     ];
 
     opUsdtRoute = [
         edge,
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: weth.address, toCoin: usdc.address },
         { swapProtocol: 2, pool: threeCrvPool, fromCoin: usdc.address, toCoin: usdt.address }
     ];
     usdtOpRoute = [
         { swapProtocol: 2, pool: threeCrvPool, fromCoin: usdt.address, toCoin: usdc.address },
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: usdc.address, toCoin: weth.address },
         reverseEdge
     ];
 
     opDaiRoute = [
         edge,
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: weth.address, toCoin: usdc.address },
         { swapProtocol: 2, pool: threeCrvPool, fromCoin: usdc.address, toCoin: dai.address }
     ];
     daiOpRoute = [
         { swapProtocol: 2, pool: threeCrvPool, fromCoin: dai.address, toCoin: usdc.address },
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: usdc.address, toCoin: weth.address },
         reverseEdge
     ];
 
@@ -429,12 +500,12 @@ async function setOpAsMajorCoin() {
 
     opFraxRoute = [
         edge,
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: weth.address, toCoin: usdc.address },
         { swapProtocol: 3, pool: encodedFeeData05, fromCoin: usdc.address, toCoin: frax.address }
     ]
     fraxOpRoute = [
         { swapProtocol: 3, pool: encodedFeeData05, fromCoin: frax.address, toCoin: usdc.address },
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: usdc.address, toCoin: weth.address },
         reverseEdge
     ]
 
@@ -442,6 +513,7 @@ async function setOpAsMajorCoin() {
         opWethRoute, opUsdcRoute, opUsdtRoute, opDaiRoute, opWbtcRoute, opFraxRoute,
         wethOpRoute, usdcOpRoute, usdtOpRoute, daiOpRoute, wbtcOpRoute, fraxOpRoute
     ];
+    storeMajorRoutes(routes)
 
     await exchange.deleteMinorCoinEdge([op.address]);
     await exchange.createInternalMajorRoutes(routes);
@@ -452,99 +524,63 @@ async function setOpAsMajorCoin() {
 let yvUSDC: IERC20Metadata,
     yvUSDT: IERC20Metadata,
     yvDAI: IERC20Metadata,
+    yvETH: IERC20Metadata,
     yvOP: IERC20Metadata;
 async function setYearnMinorCoins() {
     yvUSDC = await ethers.getContractAt("IERC20Metadata", "0xaD17A225074191d5c8a37B50FdA1AE278a2EE6A2");
     yvUSDT = await ethers.getContractAt("IERC20Metadata", "0xFaee21D0f0Af88EE72BB6d68E54a90E6EC2616de");
     yvDAI = await ethers.getContractAt("IERC20Metadata", "0x65343F414FFD6c97b0f6add33d16F6845Ac22BAc");
     yvOP = await ethers.getContractAt("IERC20Metadata", "0x7D2382b1f8Af621229d33464340541Db362B4907");
+    yvETH = await ethers.getContractAt("IERC20Metadata", "0x5B977577Eb8a480f63e11FC615D6753adB8652Ae");
 
     const usdcAdapterFactory = await ethers.getContractFactory("YearnUsdcAdapter");
     const usdtAdapterFactory = await ethers.getContractFactory("YearnUsdtAdapter");
     const daiAdapterFactory = await ethers.getContractFactory("YearnDaiAdapter");
     const opAdapterFactory = await ethers.getContractFactory("YearnOpAdapter");
+    const wethAdapterFactory = await ethers.getContractFactory("YearnWethAdapter");
 
     const usdcAdapter = await usdcAdapterFactory.deploy();
     const usdtAdapter = await usdtAdapterFactory.deploy();
     const daiAdapter = await daiAdapterFactory.deploy();
     const opAdapter = await opAdapterFactory.deploy();
+    const wethAdapter = await wethAdapterFactory.deploy();
 
-    await exchange.registerAdapters([usdcAdapter.address, usdtAdapter.address, daiAdapter.address, opAdapter.address], [9, 10, 11, 12]);
+    await exchange.registerAdapters([usdcAdapter.address, usdtAdapter.address, daiAdapter.address, opAdapter.address, wethAdapter.address], [9, 10, 11, 12, 14]);
 
     const edgeUsdc: Edge = { swapProtocol: 9, pool: yvUSDC.address, fromCoin: yvUSDC.address, toCoin: usdc.address };
     const edgeUsdt: Edge = { swapProtocol: 10, pool: yvUSDT.address, fromCoin: yvUSDT.address, toCoin: usdt.address };
     const edgeDai: Edge = { swapProtocol: 11, pool: yvDAI.address, fromCoin: yvDAI.address, toCoin: dai.address };
     const edgeOp: Edge = { swapProtocol: 12, pool: yvOP.address, fromCoin: yvOP.address, toCoin: op.address };
+    const edgeWeth: Edge = { swapProtocol: 14, pool: yvETH.address, fromCoin: yvETH.address, toCoin: weth.address };
 
-    await exchange.createMinorCoinEdge([edgeUsdc, edgeUsdt, edgeDai, edgeOp]);
+    await exchange.createMinorCoinEdge([edgeUsdc, edgeUsdt, edgeDai, edgeOp, edgeWeth]);
 
-    supportedCoinsList.push(yvUSDC, yvUSDT, yvDAI, yvOP);
+    customAmounts[yvETH.address] = parseUnits("0.05", await yvETH.decimals());
 
-    console.log("Minor coins (yvUSDC, yvUSDT, yvDAI, yvOP) are set.");
-}
+    supportedCoinsList.push(yvUSDC, yvUSDT, yvDAI, yvOP, yvETH);
 
-let mooVelodromeMAIUSDC: IERC20Metadata;
-let beefyExchange: BeefyUniversalExchange;
-let velodromeLibrary: VelodromeCalldataSource;
-async function setVelodromeMAIUSDCMinorCoin() {
-    mooVelodromeMAIUSDC = await ethers.getContractAt("IERC20Metadata", "0x01D9cfB8a9D43013a1FdC925640412D8d2D900F0");
-
-    const velodromeLp = "0xd62c9d8a3d4fd98b27caaefe3571782a3af0a737";
-    const velodromeRouter = "0xa132DAB612dB5cB9fC9Ac426A0Cc215A3423F9c9";
-    const mai = "0xdFA46478F9e5EA86d57387849598dbFB2e964b02";
-
-    const adapterFactory = await ethers.getContractFactory("BeefyUniversalAdapter");
-    const beefyExchangeFactory = await ethers.getContractFactory("BeefyUniversalExchange");
-    const velodromeLibraryFactory = await ethers.getContractFactory("VelodromeCalldataSource");
-
-    const adapter = await adapterFactory.deploy();
-    velodromeLibrary = await velodromeLibraryFactory.deploy();
-    beefyExchange = await beefyExchangeFactory.deploy(exchange.address, constants.AddressZero, true);
-
-    const edge: Edge = { swapProtocol: 13, pool: beefyExchange.address, fromCoin: mooVelodromeMAIUSDC.address, toCoin: usdc.address };
-
-    await exchange.registerAdapters([adapter.address], [13]);
-    await exchange.createMinorCoinEdge([edge]);
-
-    await beefyExchange.addBeefyPool(
-        mooVelodromeMAIUSDC.address,
-        {
-            want: velodromeLp,
-            dataContract: velodromeLibrary.address,
-            dataBuy: [],
-            dataSell: []
-        }
-    );
-
-    await beefyExchange.createApproval([usdc.address, mai, velodromeLp, velodromeLp], [velodromeRouter, velodromeRouter, mooVelodromeMAIUSDC.address, velodromeRouter])
-
-    customAmounts[mooVelodromeMAIUSDC.address] = parseUnits("0.000001", await mooVelodromeMAIUSDC.decimals());
-    supportedCoinsList.push(mooVelodromeMAIUSDC);
-
-    console.log("Minor coin (mooVelodromeMAIUSDC - via Universal beefy exchange) is set.");
+    console.log("Minor coins (yvUSDC, yvUSDT, yvDAI, yvOP, yvWETH) are set.");
 }
 
 let dola: IERC20Metadata;
 async function setDolaMajorCoin() {
-    const wethUsdcPool = "0x79c912FEF520be002c2B6e57EC4324e260f38E50";
+    const wethUsdcPoolV2 = "0x0493Bf8b6DBB159Ce2Db2E0E8403E753Abd1235b";
     const threeCrvPool = "0x1337BedC9D22ecbe766dF105c9623922A27963EC";
     const encodedFeeData3 = "0x0000000000000000000000000000000000000bb8"; // fee tier 3000 (0.3%)
     const encodedFeeData05 = "0x00000000000000000000000000000000000001F4"; // fee tier 500 (0.05%)
 
-    const velodromeRouter = "0xa132DAB612dB5cB9fC9Ac426A0Cc215A3423F9c9";
-
     dola = await ethers.getContractAt("IERC20Metadata", "0x8aE125E8653821E851F12A49F7765db9a9ce7384");
-    const dolaUsdcPool = "0x6C5019D345Ec05004A7E7B0623A91a0D9B8D590d";
+    const dolaUsdcPoolV2 = "0xB720FBC32d60BB6dcc955Be86b98D8fD3c4bA645";
 
     let dolaWethRoute: Route, dolaUsdcRoute: Route, dolaUsdtRoute: Route, dolaDaiRoute: Route, dolaWbtcRoute: Route, dolaFraxRoute: Route, dolaOpRoute: Route,
         wethDolaRoute: Route, usdcDolaRoute: Route, usdtDolaRoute: Route, daiDolaRoute: Route, wbtcDolaRoute: Route, fraxDolaRoute: Route, opDolaRoute: Route;
 
-    const dolaEdge: Edge = { swapProtocol: 1, pool: dolaUsdcPool, fromCoin: dola.address, toCoin: usdc.address };
-    const dolaEdgeReverse: Edge = { swapProtocol: 1, pool: dolaUsdcPool, fromCoin: usdc.address, toCoin: dola.address };
+    const dolaEdge: Edge = { swapProtocol: 1, pool: dolaUsdcPoolV2, fromCoin: dola.address, toCoin: usdc.address };
+    const dolaEdgeReverse: Edge = { swapProtocol: 1, pool: dolaUsdcPoolV2, fromCoin: usdc.address, toCoin: dola.address };
 
     dolaWethRoute = [
         dolaEdge,
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: usdc.address, toCoin: weth.address },
     ];
     dolaUsdcRoute = [
         dolaEdge
@@ -559,7 +595,7 @@ async function setDolaMajorCoin() {
     ];
     dolaWbtcRoute = [
         dolaEdge,
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: usdc.address, toCoin: weth.address },
         { swapProtocol: 3, pool: encodedFeeData3, fromCoin: weth.address, toCoin: wbtc.address }
     ];
     dolaFraxRoute = [
@@ -568,12 +604,12 @@ async function setDolaMajorCoin() {
     ];
     dolaOpRoute = [
         dolaEdge,
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: usdc.address, toCoin: weth.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: usdc.address, toCoin: weth.address },
         { swapProtocol: 3, pool: encodedFeeData3, fromCoin: weth.address, toCoin: op.address }
     ];
 
     wethDolaRoute = [
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: weth.address, toCoin: usdc.address },
         dolaEdgeReverse
     ];
     usdcDolaRoute = [
@@ -589,7 +625,7 @@ async function setDolaMajorCoin() {
     ];
     wbtcDolaRoute = [
         { swapProtocol: 3, pool: encodedFeeData3, fromCoin: wbtc.address, toCoin: weth.address },
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: weth.address, toCoin: usdc.address },
         dolaEdgeReverse
     ];
     fraxDolaRoute = [
@@ -598,19 +634,20 @@ async function setDolaMajorCoin() {
     ];
     opDolaRoute = [
         { swapProtocol: 3, pool: encodedFeeData3, fromCoin: op.address, toCoin: weth.address },
-        { swapProtocol: 1, pool: wethUsdcPool, fromCoin: weth.address, toCoin: usdc.address },
+        { swapProtocol: 1, pool: wethUsdcPoolV2, fromCoin: weth.address, toCoin: usdc.address },
         dolaEdgeReverse
     ];
 
     const routes = [dolaWethRoute, dolaUsdcRoute, dolaUsdtRoute, dolaDaiRoute, dolaWbtcRoute, dolaFraxRoute, dolaOpRoute,
         wethDolaRoute, usdcDolaRoute, usdtDolaRoute, daiDolaRoute, wbtcDolaRoute, fraxDolaRoute, opDolaRoute]
 
+    storeMajorRoutes(routes);
+
     await exchange.createInternalMajorRoutes(routes);
-    await exchange.createApproval([dola.address, usdc.address, weth.address], [velodromeRouter, velodromeRouter, velodromeRouter])
 
     supportedCoinsList.push(dola);
 
-    const velodromeAdapterFactory = await ethers.getContractFactory("VelodromeAdapter");
+    const velodromeAdapterFactory = await ethers.getContractFactory("VelodromeV2Adapter");
     const velodromeAdapter = await velodromeAdapterFactory.deploy();
 
     await exchange.registerAdapters([velodromeAdapter.address], [1]); // +
@@ -618,60 +655,163 @@ async function setDolaMajorCoin() {
     console.log("Set DOLA as major coin");
 }
 
-let mooVelodromeDOLAMAI: IERC20Metadata;
-async function setVelodromeDolaMaiMinorCoin() {
-    mooVelodromeDOLAMAI = await ethers.getContractAt("IERC20Metadata", "0xa9913D2DA71768CD13eA75B05D9E91A3120E2f08");
+let frxEth: IERC20Metadata;
+async function setFrxEthMajorCoin() {
+    frxEth = await ethers.getContractAt("IERC20Metadata", "0x6806411765Af15Bddd26f8f544A34cC40cb9838B");
+    const dolaUsdcPoolV2 = "0x3f42Dc59DC4dF5cD607163bC620168f7FF7aB970";
 
-    const velodromeLp = "0x21950a0cA249A0ef3d182338c86c8C066B24D801";
-    const velodromeRouter = "0xa132DAB612dB5cB9fC9Ac426A0Cc215A3423F9c9";
-    const mai = "0xdFA46478F9e5EA86d57387849598dbFB2e964b02";
+    const frxEthEdge: Edge = { swapProtocol: 1, pool: dolaUsdcPoolV2, fromCoin: frxEth.address, toCoin: weth.address };
 
-    const edge: Edge = { swapProtocol: 13, pool: beefyExchange.address, fromCoin: mooVelodromeDOLAMAI.address, toCoin: dola.address };
+    const routes = createMajorRoutesForToken(frxEthEdge);
 
-    await exchange.createMinorCoinEdge([edge]);  // +
+    storeMajorRoutes(routes);
+    await exchange.createInternalMajorRoutes(routes);
 
-    await beefyExchange.addBeefyPool(
-        mooVelodromeDOLAMAI.address,
-        {
-            want: velodromeLp,
-            dataContract: velodromeLibrary.address,
-            dataBuy: [],
-            dataSell: []
-        }
-    );
-    await beefyExchange.createApproval([dola.address, velodromeLp, velodromeLp], [velodromeRouter, mooVelodromeDOLAMAI.address, velodromeRouter])
+    supportedCoinsList.push(frxEth);
+    customAmounts[frxEth.address] = parseUnits("0.01", await frxEth.decimals());
 
-    supportedCoinsList.push(mooVelodromeDOLAMAI);
-
-    console.log("Minor coin (mooVelodromeDOLAMAI - via Universal beefy exchange) is set.");
+    console.log("Set frxEth as major coin");
 }
 
-let mooVelodromeDOLAFRAX: IERC20Metadata;
-async function setVelodromeDolaFraxMinorCoin() {
-    mooVelodromeDOLAFRAX = await ethers.getContractAt("IERC20Metadata", "0xe282AD2480fFD8e34454C56c4360E5ba3240a429");
+let mai: IERC20Metadata;
+async function setMaiMajorCoin() {
+    mai = await ethers.getContractAt("IERC20Metadata", "0xdFA46478F9e5EA86d57387849598dbFB2e964b02");
+    const maiUsdcPoolV2 = "0xE54e4020d1C3afDB312095D90054103E68fe34B0";
 
-    const velodromeLp = "0xD29DE64c1a9Dd3e829A7345BE1E9c32a9414541f";
-    const velodromeRouter = "0xa132DAB612dB5cB9fC9Ac426A0Cc215A3423F9c9";
-    const frax = "0x2E3D870790dC77A83DD1d18184Acc7439A53f475";
+    const frxEthEdge: Edge = { swapProtocol: 1, pool: maiUsdcPoolV2, fromCoin: mai.address, toCoin: usdc.address };
 
-    const edge: Edge = { swapProtocol: 13, pool: beefyExchange.address, fromCoin: mooVelodromeDOLAFRAX.address, toCoin: dola.address };
+    const routes = createMajorRoutesForToken(frxEthEdge);
 
-    await exchange.createMinorCoinEdge([edge]); // +
+    storeMajorRoutes(routes);
+    await exchange.createInternalMajorRoutes(routes);
 
-    await beefyExchange.addBeefyPool(
-        mooVelodromeDOLAFRAX.address,
+    supportedCoinsList.push(mai);
+
+    console.log("Set (MAI) as major coin");
+}
+
+let mim: IERC20Metadata;
+async function setMimMajorCoin() {
+    mim = await ethers.getContractAt("IERC20Metadata", "0xB153FB3d196A8eB25522705560ac152eeEc57901");
+    const pool = "0x29A20cA4968d756C7D0922a7064a1A56f4624e9a";
+
+    const frxEthEdge: Edge = { swapProtocol: 1, pool: pool, fromCoin: mim.address, toCoin: usdc.address };
+
+    const routes = createMajorRoutesForToken(frxEthEdge);
+
+    storeMajorRoutes(routes);
+    await exchange.createInternalMajorRoutes(routes);
+
+    supportedCoinsList.push(mim);
+
+    console.log("Set (MIM) as major coin");
+}
+
+type VelodromeTokenInfo = {
+    mooToken: string,
+    majorCoin: string,
+    customAmount?: BigNumber,
+    v2?: boolean
+}
+
+let mooTokens: string[] = [];
+async function setVelodromeTokens() {
+    const tokens: VelodromeTokenInfo[] = [
+        // {
+        //     "mooToken": "0xca39e63E3b798D5A3f44CA56A123E3FCc29ad598",
+        //     majorCoin: weth.address,
+        //     customAmount: parseUnits("0.01", await weth.decimals())
+        // },
         {
-            want: velodromeLp,
-            dataContract: velodromeLibrary.address,
-            dataBuy: [],
-            dataSell: []
+            "mooToken": "0x453f61390ce6DfB668bbF4D93E58c94BB0ae81f3",
+            majorCoin: usdc.address,
+            v2: true,
+            customAmount: BigNumber.from("503592804986")
         }
+    ];
+
+    const factory = await ethers.getContractFactory("BeefyUniversalAdapter");
+    const adapter = await factory.deploy();
+
+    const adapterId = 16;
+    let beefyZapper = "0x9b50b06b81f033ca86d70f0a44f30bd7e0155737";
+    await exchange.registerAdapters([adapter.address], [adapterId]);
+
+    for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        const mooToken = await ethers.getContractAt("contracts/interfaces/IBeefyVaultV6.sol:IBeefyVaultV6", token.mooToken);
+        const veloPool = await ethers.getContractAt("IVelodromePool", await mooToken.want())
+
+        if (token.v2) {
+            beefyZapper = "0x25e66f746254cd7582E65EF7dE1F10d8883F4640"
+        }
+
+        const token0 = await veloPool.token0();
+        const token1 = await veloPool.token1();
+        const oppositeToken = await ethers.getContractAt("IERC20Metadata", (token0 == token.majorCoin) ? token1 : token0);
+
+        if ((await oppositeToken.allowance(exchange.address, beefyZapper)).eq(0)) {
+            await exchange.createApproval([oppositeToken.address], [beefyZapper]);
+        }
+
+        await exchange.createMinorCoinEdge([{ swapProtocol: adapterId, pool: beefyZapper, fromCoin: token.mooToken, toCoin: token.majorCoin }])
+
+        supportedCoinsList.push(await ethers.getContractAt("IERC20Metadata", token.mooToken));
+        mooTokens.push(token.mooToken);
+
+        if (token.customAmount) {
+            customAmounts[mooToken.address] = token.customAmount;
+        }
+
+        console.log(`Minor coin (${await mooToken.symbol()}) is set.`);
+    }
+}
+
+let mooCurveFsBTC: IERC20Metadata;
+async function setMooCurveFsBTCMinorCoin() {
+    mooCurveFsBTC = await ethers.getContractAt("IERC20Metadata", "0x25DE69dA4469A96974FaE79d0C41366A63317FDC");
+    const curvePool = "0x9F2fE3500B1a7E285FDc337acacE94c480e00130";
+
+    const factory = await ethers.getContractFactory("BeefyCurveSBTCAdapter", { libraries: { BeefyBase: beefyLibraryAddress } });
+    const adapter = await factory.deploy();
+
+    const edge: Edge = { swapProtocol: 17, pool: mooCurveFsBTC.address, fromCoin: mooCurveFsBTC.address, toCoin: wbtc.address };
+
+    await exchange.registerAdapters([adapter.address], [17]);
+    await exchange.createMinorCoinEdge([edge]);
+    await exchange.createApproval(
+        [curvePool, wbtc.address],
+        [mooCurveFsBTC.address, curvePool]
     );
-    await beefyExchange.createApproval([frax, velodromeLp, velodromeLp], [velodromeRouter, mooVelodromeDOLAFRAX.address, velodromeRouter])
 
-    supportedCoinsList.push(mooVelodromeDOLAFRAX);
+    customAmounts[mooCurveFsBTC.address] = parseUnits("0.0001", await mooCurveFsBTC.decimals());
 
-    console.log("Minor coin (mooVelodromeDOLAFRAX - via Universal beefy exchange) is set.");
+    supportedCoinsList.push(mooCurveFsBTC);
+
+    console.log("Minor coin (mooCurveFsBTC) is set.");
+}
+
+let mooCurveOpFMim: IERC20Metadata;
+async function setMooCurveOpFMiminorCoin() {
+    mooCurveOpFMim = await ethers.getContractAt("IERC20Metadata", "0x5990002594b13e174885ba4D4Ec15B8a8A4485bb");
+
+    const factory = await ethers.getContractFactory("BeefyCurveOpFMimAdapter", { libraries: { BeefyBase: beefyLibraryAddress } });
+    const adapter = await factory.deploy();
+    const curvePool = "0x810D1AaA4Cd8F21c23bB648F2dfb9DC232A01F09";
+
+    const edge: Edge = { swapProtocol: 15, pool: mooCurveOpFMim.address, fromCoin: mooCurveOpFMim.address, toCoin: mim.address };
+
+    await exchange.registerAdapters([adapter.address], [15]);
+    await exchange.createMinorCoinEdge([edge]);
+
+    await exchange.createApproval(
+        [mim.address, curvePool],
+        [curvePool, mooCurveOpFMim.address]
+    )
+
+    supportedCoinsList.push(mooCurveOpFMim);
+
+    console.log("Minor coin (mooCurveOpFMim) is set.");
 }
 
 // TODO: add your new exchange setup function above this line. use example below
@@ -769,15 +909,18 @@ describe("Exchange (full setup operations on Optimism Mainnet)", async () => {
         await setupLdoMinorCoin();
         await setupBeefyHopUsdcMinorCoin(); // adapter ids: 5
         await setupBeefyCurveFsUSDMinorCoin(); // adapter ids: 6
-        await setupBeefyStargateUsdcMinorCoin(); // adapter ids: 7
+        await setupBeefyStargateUsdcWethMinorCoins(); // adapter ids: 7
         await setupBeefyCurveWSTETHMinorCoin(); // adapter ids: 8
         await setupOpMinorCoin();
         await setOpAsMajorCoin();
         await setYearnMinorCoins();         // adapter ids: 9, 10, 11, 12
-        await setVelodromeMAIUSDCMinorCoin(); // adapter ids: 13
         await setDolaMajorCoin();
-        await setVelodromeDolaMaiMinorCoin();
-        await setVelodromeDolaFraxMinorCoin();
+        await setFrxEthMajorCoin();
+        await setMaiMajorCoin();
+        await setVelodromeTokens();
+        await setMooCurveFsBTCMinorCoin();
+        await setMimMajorCoin();
+        await setMooCurveOpFMiminorCoin();
 
         // TODO: add your new exchange setup function call above this line. add adapter
         // id comment after function call if you are registering any new adapters inside
@@ -789,6 +932,10 @@ describe("Exchange (full setup operations on Optimism Mainnet)", async () => {
     });
 
     it("Should check all available swaps", async () => {
+        // remove some faulty routes
+        const filter = [mooCurveOpFMim.address, mim.address]
+        supportedCoinsList = supportedCoinsList.filter((coin) => !filter.includes(coin.address));
+
         console.log("Supported coins list length:", supportedCoinsList.length);
 
         await weth.deposit({ value: parseEther("1000.0") });

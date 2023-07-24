@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IBeefyVaultV6} from "./IBeefyVault.sol";
+import {IBeefyVaultV6} from "./../../interfaces/IBeefyVaultV6.sol";
 
 library BeefyBase {
     function beefyDepositAll(address beefyVault) external returns (uint256) {

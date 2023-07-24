@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {IExchangeAdapter} from "./../../interfaces/IExchangeAdapter.sol";
-import {IBeefyVaultV6} from "./IBeefyVault.sol";
+import {IBeefyVaultV6} from "./../../interfaces/IBeefyVaultV6.sol";
 import "./../../interfaces/IVelodromePool.sol";
 import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import "./../../interfaces/IWrappedEther.sol";

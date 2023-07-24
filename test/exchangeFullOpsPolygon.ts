@@ -306,6 +306,53 @@ async function setupMooCurveATriCrypto3MinorCoin() {
     console.log("Minor coin (mooCurveATriCrypto3) is set.");
 }
 
+async function optimiseUsdStablesExchange() {
+    const pool = "0x445FE580eF8d70FF569aB36e80c647af338db351"; // aave pool
+
+    const factory = await ethers.getContractFactory("PolygonCurve3Adapter");
+    const adapter = await factory.deploy();
+
+    await exchange.registerAdapters([adapter.address], [4]);
+
+    let usdtDaiRoute: Route, usdtUsdcRoute: Route,
+        usdcDaiRoute: Route, usdcUsdtRoute: Route,
+        daiUsdcRoute: Route, daiUsdtRoute: Route;
+
+    usdtDaiRoute = [
+        // USDT - DAI
+        { swapProtocol: 4, pool: pool, fromCoin: usdt.address, toCoin: dai.address }
+    ];
+    usdtUsdcRoute = [
+        // USDT - USDC
+        { swapProtocol: 4, pool: pool, fromCoin: usdt.address, toCoin: usdc.address }
+    ];
+    usdcDaiRoute = [
+        // USDC - DAI
+        { swapProtocol: 4, pool: pool, fromCoin: usdc.address, toCoin: dai.address }
+    ];
+    usdcUsdtRoute = [
+        // USDC - USDT
+        { swapProtocol: 4, pool: pool, fromCoin: usdc.address, toCoin: usdt.address }
+    ];
+    daiUsdcRoute = [
+        // DAI - USDC
+        { swapProtocol: 4, pool: pool, fromCoin: dai.address, toCoin: usdc.address }
+    ];
+    daiUsdtRoute = [
+        // DAI - USDT
+        { swapProtocol: 4, pool: pool, fromCoin: dai.address, toCoin: usdt.address }
+    ];
+
+    const routes: Route[] = [
+        usdtDaiRoute, usdtUsdcRoute,
+        usdcDaiRoute, usdcUsdtRoute,
+        daiUsdcRoute, daiUsdtRoute
+    ];
+    await exchange.createInternalMajorRoutes(routes);
+
+    console.log("USD stablecoins route optimised");
+}
+
 // TODO: add your new exchange setup function above this line. use example below
 //
 // always specify in function name if you are adding new minor coin, doing some
@@ -406,6 +453,7 @@ describe("Exchange (full setup operations on Polygon Mainnet)", async () => {
         await setupStargateUsdcUsdtMinorCoins(); // adapter ids: 4, 5
         await setupWethMajorCoin();
         await setupMooCurveATriCrypto3MinorCoin(); // adapter ids: 6
+        await optimiseUsdStablesExchange(); // adapter ids: 4
 
         // TODO: add your new exchange setup function call above this line. add adapter
         // id comment after function call if you are registering any new adapters inside

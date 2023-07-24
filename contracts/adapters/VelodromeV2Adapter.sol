@@ -33,7 +33,7 @@ interface IExchangeAdapter {
     ) external payable returns (uint256);
 }
 
-contract VelodromeAdapter is IExchangeAdapter {
+contract VelodromeV2Adapter is IExchangeAdapter {
     using SafeERC20 for IERC20;
     address public constant ROUTER = 0xa062aE8A9c5e11aaA026fc2670B0D65cCc8B2858;
     address public constant POOL_FACTORY =

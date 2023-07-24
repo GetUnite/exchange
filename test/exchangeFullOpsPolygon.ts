@@ -214,13 +214,13 @@ async function setupStargateUsdcUsdtMinorCoins() {
     mooStargateUsdt = await ethers.getContractAt("IERC20Metadata", "0x1C480521100c962F7da106839a5A504B5A7457a1");
     mooStargateUsdc = await ethers.getContractAt("IERC20Metadata", "0x2F4BBA9fC4F77F16829F84181eB7C8b50F639F95");
 
-    const usdtEdge: Edge = { swapProtocol: 4, pool: mooStargateUsdc.address, fromCoin: mooStargateUsdc.address, toCoin: usdc.address };
-    const usdcEdge: Edge = { swapProtocol: 5, pool: mooStargateUsdt.address, fromCoin: mooStargateUsdt.address, toCoin: usdt.address };
+    const usdtEdge: Edge = { swapProtocol: 7, pool: mooStargateUsdc.address, fromCoin: mooStargateUsdc.address, toCoin: usdc.address };
+    const usdcEdge: Edge = { swapProtocol: 8, pool: mooStargateUsdt.address, fromCoin: mooStargateUsdt.address, toCoin: usdt.address };
 
     const usdtAdapter = await usdtAdapterFactory.deploy();
     const usdcAdapter = await usdcAdapterFactory.deploy();
 
-    await exchange.registerAdapters([usdcAdapter.address, usdtAdapter.address], [4, 5]);
+    await exchange.registerAdapters([usdcAdapter.address, usdtAdapter.address], [7, 8]);
     await exchange.createMinorCoinEdge([usdtEdge, usdcEdge]);
     await exchange.createApproval([usdc.address, usdt.address, usdcStargateLp, usdtStargateLp], [stargate, stargate, mooStargateUsdc.address, mooStargateUsdt.address]);
 

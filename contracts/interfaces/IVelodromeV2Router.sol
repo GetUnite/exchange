@@ -61,6 +61,8 @@ interface IVelodromeV2Router {
         address tokenB
     ) external pure returns (address token0, address token1);
 
+    function defaultFactory() external view returns (address);
+
     /// @notice Calculate the address of a pool by its' factory.
     ///         Used by all Router functions containing a `Route[]` or `_factory` argument.
     ///         Reverts if _factory is not approved by the FactoryRegistry

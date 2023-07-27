@@ -814,6 +814,53 @@ async function setMooCurveOpFMiminorCoin() {
     console.log("Minor coin (mooCurveOpFMim) is set.");
 }
 
+type YearnTokenInfo = {
+    mooToken: string,
+    majorCoin: string,
+    customAmount?: BigNumber,
+}
+
+let yearnVeloTokens: string[] = [];
+async function setYearnVelodromeMinorCoins() {
+    const yearnUsdcAlusd = "0x3B141BD7d6E1d67e2101A08E4dd849a8408d91aa";
+    const yearnUsdcSusd = "0x1B1d2EfB6045851F8ccdE24369003e0fF157980b";
+    const yearnUsdcUsdt = "0x3fb792Fa67cde50A41e20304E4afEf522CF711ee";
+    const yearnAlusdFrax = "0x9056b19Fde674B5Ad8397e7Ed3E25a1BCCEf0C27";
+
+    const yearnTokens: YearnTokenInfo[] = [
+        { mooToken: yearnUsdcAlusd, majorCoin: usdc.address },
+        { mooToken: yearnUsdcSusd, majorCoin: usdc.address },
+        { mooToken: yearnUsdcUsdt, majorCoin: usdc.address },
+        { mooToken: yearnAlusdFrax, majorCoin: frax.address },
+    ]
+
+    const factory = await ethers.getContractFactory("YearnUniversalAdapter");
+    const adapter = await factory.deploy();
+
+    const adapterId = 19;
+
+    await exchange.registerAdapters([adapter.address], [adapterId]);
+
+    for (let i = 0; i < yearnTokens.length; i++) {
+        const tokenInfo = yearnTokens[i];
+
+        const yearnToken = await ethers.getContractAt("IERC20Metadata", tokenInfo.mooToken);
+
+        const edge: Edge = { swapProtocol: adapterId, pool: "0x0000000000000000000000000000000000000001", fromCoin: yearnToken.address, toCoin: tokenInfo.majorCoin };
+
+        await exchange.createMinorCoinEdge([edge]);
+
+        if (tokenInfo.customAmount) {
+            customAmounts[yearnToken.address] = tokenInfo.customAmount;
+        }
+
+        supportedCoinsList.push(yearnToken);
+        yearnVeloTokens.push(yearnToken.address);
+
+        console.log(`Minor coin (${await yearnToken.symbol()}) is set.`);
+    }
+}
+
 // TODO: add your new exchange setup function above this line. use example below
 //
 // always specify in function name if you are adding new minor coin, doing some
@@ -921,6 +968,7 @@ describe("Exchange (full setup operations on Optimism Mainnet)", async () => {
         await setMooCurveFsBTCMinorCoin();
         await setMimMajorCoin();
         await setMooCurveOpFMiminorCoin();
+        await setYearnVelodromeMinorCoins();
 
         // TODO: add your new exchange setup function call above this line. add adapter
         // id comment after function call if you are registering any new adapters inside

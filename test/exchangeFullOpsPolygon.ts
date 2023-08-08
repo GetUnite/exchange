@@ -195,6 +195,117 @@ async function setupAgEurMinorCoin() {
     console.log("Minor coin (agEUR) is set.");
 }
 
+let beefyLibraryAddress: string;
+let mooStargateUsdc: IERC20Metadata, mooStargateUsdt: IERC20Metadata;
+async function setupStargateUsdcUsdtMinorCoins() {
+    const stargate = "0x45A01E4e04F14f7A4a6702c74187c5F6222033cd";
+
+    const usdcStargateLp = "0x1205f31718499dBf1fCa446663B532Ef87481fe1";
+    const usdtStargateLp = "0x29e38769f23701A2e4A8Ef0492e19dA4604Be62c";
+
+    const libraryFactory = await ethers.getContractFactory("BeefyBase");
+    const library = await libraryFactory.deploy();
+    await library.deployTransaction.wait();
+    beefyLibraryAddress = library.address;
+
+    const usdtAdapterFactory = await ethers.getContractFactory("BeefyPolygonStargateUsdtAdapter", { libraries: { BeefyBase: beefyLibraryAddress } });
+    const usdcAdapterFactory = await ethers.getContractFactory("BeefyPolygonStargateUsdcAdapter", { libraries: { BeefyBase: beefyLibraryAddress } });
+
+    mooStargateUsdt = await ethers.getContractAt("IERC20Metadata", "0x1C480521100c962F7da106839a5A504B5A7457a1");
+    mooStargateUsdc = await ethers.getContractAt("IERC20Metadata", "0x2F4BBA9fC4F77F16829F84181eB7C8b50F639F95");
+
+    const usdtEdge: Edge = { swapProtocol: 7, pool: mooStargateUsdc.address, fromCoin: mooStargateUsdc.address, toCoin: usdc.address };
+    const usdcEdge: Edge = { swapProtocol: 8, pool: mooStargateUsdt.address, fromCoin: mooStargateUsdt.address, toCoin: usdt.address };
+
+    const usdtAdapter = await usdtAdapterFactory.deploy();
+    const usdcAdapter = await usdcAdapterFactory.deploy();
+
+    await exchange.registerAdapters([usdcAdapter.address, usdtAdapter.address], [7, 8]);
+    await exchange.createMinorCoinEdge([usdtEdge, usdcEdge]);
+    await exchange.createApproval([usdc.address, usdt.address, usdcStargateLp, usdtStargateLp], [stargate, stargate, mooStargateUsdc.address, mooStargateUsdt.address]);
+
+    customAmounts[mooStargateUsdc.address] = parseUnits("1.0", 6);
+    customAmounts[mooStargateUsdt.address] = parseUnits("1.0", 6);
+
+    supportedCoinsList.push(mooStargateUsdc, mooStargateUsdt);
+    console.log("Minor coin (mooStargateUsdc, mooStargateUsdt) is set.");
+}
+
+let weth: IERC20Metadata;
+async function setupWethMajorCoin() {
+    const PolygonCurveEURtPool = "0x225fb4176f0e20cdb66b4a3df70ca3063281e855";
+    weth = await ethers.getContractAt("IERC20Metadata", "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619")
+
+    const swapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
+    const encodedFeeData = "0x00000000000000000000000000000000000001F4"; // fee tier 500 (0.05%)
+
+    const wethUsdcRoute = { swapProtocol: 2, pool: encodedFeeData, fromCoin: weth.address, toCoin: usdc.address };
+    const usdcWethRoute = { swapProtocol: 2, pool: encodedFeeData, fromCoin: usdc.address, toCoin: weth.address };
+
+    let usdtWethRoute: Route, daiWethRoute: Route, eurtWethRoute: Route,
+        wethUsdtRoute: Route, wethDaiRoute: Route, wethEurtRoute: Route;
+
+    usdtWethRoute = [
+        { swapProtocol: 1, pool: PolygonCurveEURtPool, fromCoin: usdt.address, toCoin: usdc.address },
+        usdcWethRoute
+    ];
+    daiWethRoute = [
+        { swapProtocol: 1, pool: PolygonCurveEURtPool, fromCoin: dai.address, toCoin: usdc.address },
+        usdcWethRoute
+    ];
+    eurtWethRoute = [
+        { swapProtocol: 1, pool: PolygonCurveEURtPool, fromCoin: eurt.address, toCoin: usdc.address },
+        usdcWethRoute
+    ]
+    wethUsdtRoute = [
+        wethUsdcRoute,
+        { swapProtocol: 1, pool: PolygonCurveEURtPool, fromCoin: usdc.address, toCoin: usdt.address }
+    ];
+    wethDaiRoute = [
+        wethUsdcRoute,
+        { swapProtocol: 1, pool: PolygonCurveEURtPool, fromCoin: usdc.address, toCoin: dai.address }
+    ];
+    wethEurtRoute = [
+        wethUsdcRoute,
+        { swapProtocol: 1, pool: PolygonCurveEURtPool, fromCoin: usdc.address, toCoin: eurt.address }
+    ];
+
+    const routes: Route[] = [
+        [usdcWethRoute], usdtWethRoute, daiWethRoute, eurtWethRoute,
+        [wethUsdcRoute], wethUsdtRoute, wethDaiRoute, wethEurtRoute
+    ];
+
+    await exchange.createApproval([weth.address], [swapRouter]);
+    await exchange.createInternalMajorRoutes(routes);
+
+    customAmounts[weth.address] = parseUnits("0.01", 18);
+
+    supportedCoinsList.push(weth);
+    console.log("Major coin (WETH) is set.");
+}
+
+let mooCurveATriCrypto3: IERC20Metadata;
+async function setupMooCurveATriCrypto3MinorCoin() {
+    mooCurveATriCrypto3 = await ethers.getContractAt("IERC20Metadata", "0x5A0801BAd20B6c62d86C566ca90688A6b9ea1d3f");
+    const factory = await ethers.getContractFactory("BeefyCurveATriCrypto3Adapter", { libraries: { BeefyBase: beefyLibraryAddress } });
+    const contract = await factory.deploy();
+
+    const curveLp = "0xdad97f7713ae9437fa9249920ec8507e5fbb23d3";
+    const curvePool = "0x1d8b86e3D88cDb2d34688e87E72F388Cb541B7C8";
+
+    const edge: Edge = { swapProtocol: 6, pool: mooCurveATriCrypto3.address, fromCoin: mooCurveATriCrypto3.address, toCoin: weth.address };
+
+    await exchange.registerAdapters([contract.address], [6]);
+    await exchange.createMinorCoinEdge([edge]);
+    await exchange.createApproval(
+        [weth.address, curveLp, curveLp],
+        [curvePool, curvePool, mooCurveATriCrypto3.address]
+    );
+
+    supportedCoinsList.push(mooCurveATriCrypto3);
+    console.log("Minor coin (mooCurveATriCrypto3) is set.");
+}
+
 async function optimiseUsdStablesExchange() {
     const pool = "0x445FE580eF8d70FF569aB36e80c647af338db351"; // aave pool
 
@@ -339,6 +450,9 @@ describe("Exchange (full setup operations on Polygon Mainnet)", async () => {
         await setupWmaticMinorCoin();       // adapter ids: 2 (UniswapV3)
         await setupEursParJeurMinorCoins(); // adapter ids: 3
         await setupAgEurMinorCoin();
+        await setupStargateUsdcUsdtMinorCoins(); // adapter ids: 4, 5
+        await setupWethMajorCoin();
+        await setupMooCurveATriCrypto3MinorCoin(); // adapter ids: 6
         await optimiseUsdStablesExchange(); // adapter ids: 4
 
         // TODO: add your new exchange setup function call above this line. add adapter

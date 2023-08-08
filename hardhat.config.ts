@@ -13,8 +13,9 @@ dotenv.config();
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.11",
+    version: "0.8.19",
     settings: {
+      viaIR: true,
       optimizer: {
         enabled: true,
         runs: 1000000,
@@ -31,6 +32,13 @@ const config: HardhatUserConfig = {
     mainnet: {
       url: process.env.MAINNET_URL,
       gasPrice: 'auto',
+      accounts: {
+        mnemonic: process.env.MNEMONIC,
+      },
+    },
+    optimism: {
+      url: process.env.OPTIMISM_URL,
+      gasPrice: "auto",
       accounts: {
         mnemonic: process.env.MNEMONIC,
       },
@@ -70,7 +78,8 @@ const config: HardhatUserConfig = {
     currency: "USD",
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    // apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: process.env.OPTIMISM_API_KEY,
     // apiKey: process.env.POLYGONSCAN_API_KEY,
   },
   mocha: {

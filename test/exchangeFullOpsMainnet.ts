@@ -620,6 +620,26 @@ async function setupWSBTCMinorCoin() {
     console.log("Minor coin (WSBTC) is set.");
 }
 
+let ageurEurocLp: IERC20Metadata;
+async function setupCurveAgeurEurocLpMinorCoin() {
+    ageurEurocLp = await ethers.getContractAt("IERC20Metadata", "0xBa3436Fd341F2C8A928452Db3C5A3670d1d5Cc73");
+    const pool = "0xBa3436Fd341F2C8A928452Db3C5A3670d1d5Cc73";
+
+    const factory = await ethers.getContractFactory("CurveAgeurEurocLpAdapter");
+    const adapter = await factory.deploy();
+
+    const ageurEurocLpEdge = { swapProtocol: 20, pool: pool, fromCoin: ageurEurocLp.address, toCoin: usdc.address };
+    await exchange.registerAdapters([adapter.address], [20]);
+
+    await exchange.createMinorCoinEdge([ageurEurocLpEdge]);
+    supportedCoinsList.push(ageurEurocLp);
+
+    await exchange.createApproval([ageur.address], [pool]);
+
+    console.log("Minor coin (agEUREUROC-f) is set.");
+
+}
+
 // TODO: add your new exchange setup function above this line. use example below
 //
 // always specify in function name if you are adding new minor coin, doing some
@@ -733,6 +753,7 @@ describe("Exchange (full setup operations on Ethereum Mainnet)", async () => {
         await setupJpegMinorCoin();
         await setWbtcAsMajorCoin();
         await setupWSBTCMinorCoin();                          // adapter ids: 19
+        await setupCurveAgeurEurocLpMinorCoin();              // adapter ids: 20
 
         // TODO: add your new exchange setup function call above this line. add adapter
         // id comment after function call if you are registering any new adapters inside
